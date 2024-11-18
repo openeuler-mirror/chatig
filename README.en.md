@@ -1,36 +1,27 @@
-# chatig
+# Chatig
 
-#### Description
-chatig is an abbreviation for Chat Inference Gateway, which aims to provide an API layer that is compatible with OpenAI.
+#### Introduction
+Chatig is an efficient and unified inference gateway designed to provide developers and enterprises with an OpenAI-compatible API layer, acting as an intermediary between intelligent applications and large model services. With Chatig, developers can more easily integrate large model services, empowering intelligent applications.
 
 #### Software Architecture
-Software architecture description
+Chatig integrates modules such as tenant management, traffic control, model scheduling, and security auditing. In addition to offering a unified API interface, it enables flexible multi-model switching, model management, data privacy protection, and usage log monitoring. This helps developers and enterprises manage and optimize the deployment and operation of intelligent applications more efficiently.
 
-#### Installation
+![](./docs/images/chatig-infra_en.jpg)
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+#### Installation Guide
 
-#### Instructions
+1. Install the [copilot](https://gitee.com/openeuler/euler-copilot-framework/blob/master/docs/user-guide/%E9%83%A8%E7%BD%B2%E6%8C%87%E5%8D%97/%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E4%B8%8B%E9%83%A8%E7%BD%B2%E6%8C%87%E5%8D%97.md) or [chatchat](https://github.com/chatchat-space/Langchain-Chatchat) large model service framework.
+2. Follow the [installation documentation](./docs/pgsql/env_setup.md) to install pgsql.
+3. Modify Chatig's configuration files (`./src/configs/`) and pgsql environment variables (`./.env`).
+4. Run directly: `cargo run`
 
-1.  xxxx
-2.  xxxx
-3.  xxxx
+#### Usage Instructions
 
-#### Contribution
+Provides the API endpoint `/v1/chat/completions` for applications such as [AA-UI](https://gitee.com/openeuler/aa-ui) and [cursor](https://www.cursor.com/).
 
-1.  Fork the repository
-2.  Create Feat_xxx branch
-3.  Commit your code
-4.  Create Pull Request
+#### Contribution Guide
 
-
-#### Gitee Feature
-
-1.  You can use Readme\_XXX.md to support different languages, such as Readme\_en.md, Readme\_zh.md
-2.  Gitee blog [blog.gitee.com](https://blog.gitee.com)
-3.  Explore open source project [https://gitee.com/explore](https://gitee.com/explore)
-4.  The most valuable open source project [GVP](https://gitee.com/gvp)
-5.  The manual of Gitee [https://gitee.com/help](https://gitee.com/help)
-6.  The most popular members  [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+1. Fork this repository.
+2. Create a new branch `Feat_xxx`.
+3. Commit your code.
+4. Create a Pull Request.
