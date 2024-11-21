@@ -3,9 +3,9 @@
 # Used to store uploaded files
 temp_docs_path: "/root/.chatig/data/temp_docs"
 
-# apikey
+# admin password
 apikey:
-  value: "sk-chatig"
+  value: "chatig"
 
 # main server port
 port: 8081

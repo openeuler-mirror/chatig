@@ -3,7 +3,7 @@ use actix_web::{get, post, web, Error, HttpRequest, HttpResponse, Responder};
 use crate::servers::api_schemas::{ChatCompletionRequest, ErrorResponse, AppState};
 use crate::models::copilot;
 use crate::models::chatchat;
-use crate::utils::check_api_key;
+use crate::utils::check_api_key_db;
 
 
 // Define supported models
@@ -16,9 +16,9 @@ pub async fn health() -> impl Responder {
 
 #[post("/v1/chat/completions")]
 pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>, headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
@@ -75,9 +75,9 @@ pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>, header
 
 #[post("/v1/rag/completions")]
 pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>, headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };

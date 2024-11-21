@@ -22,6 +22,7 @@ pub async fn setup_database(database_url: String) -> Result<Pool<PostgresConnect
     let pool_clone = pool.clone();
     let client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
     create_file_object_table(&client).await?;
+    create_invitation_code_table(&client).await?;
 
     Ok(pool) 
 }
@@ -39,6 +40,24 @@ async fn create_file_object_table(client: &Client) -> Result<(), Error> {
         );
     "#;
 
+    client.execute(create_table_query, &[]).await?;
+    Ok(())
+}
+
+// Create the invitation_code table
+async fn create_invitation_code_table(client: &Client) -> Result<(), Error> {
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS invitation_code (
+            id SERIAL PRIMARY KEY,
+            users TEXT NOT NULL,
+            origination TEXT,
+            telephone TEXT,
+            email TEXT,
+            created_at BIGINT NOT NULL,
+            code TEXT NOT NULL,
+            UNIQUE (code)
+        );
+    "#;
     client.execute(create_table_query, &[]).await?;
     Ok(())
 }
