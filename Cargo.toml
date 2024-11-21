@@ -22,3 +22,5 @@ async-stream = "0.3"
 bytes = "1.0"
 chrono = { version = "0.4", features = ["serde"] } 
 actix-cors = "0.6.2"
+rand = "0.8.5"
+percent-encoding = "2.2.0"

@@ -478,6 +478,8 @@ dependencies = [
  "chrono",
  "dotenv",
  "futures",
+ "percent-encoding",
+ "rand",
  "reqwest",
  "serde",
  "serde_json",

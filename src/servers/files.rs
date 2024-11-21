@@ -2,7 +2,7 @@ use actix_web::{get, post, web, delete, Error, HttpRequest, HttpResponse, Respon
 use actix_multipart::Multipart;
 
 use crate::models::chatchat::upload_temp_docs;
-use crate::utils::check_api_key;
+use crate::utils::check_api_key_db;
 use crate::servers::api_schemas::{AppState, ErrorResponse};
 use crate::database::files::{list_file_objects, get_file_object_by_id, delete_file_object};
 
@@ -18,9 +18,9 @@ struct DeleteFileResponse {
 // post https://***/v1/files
 #[post("v1/files")]
 async fn upload_file(payload: Multipart, headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
@@ -47,9 +47,9 @@ async fn upload_file(payload: Multipart, headers: HttpRequest, data: web::Data<A
 // delete https://***/v1/files/{file_id}
 #[delete("v1/files/{file_id}")]
 async fn delete_file(headers: HttpRequest, data: web::Data<AppState>, file_id: web::Path<i32>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
@@ -93,9 +93,9 @@ async fn delete_file(headers: HttpRequest, data: web::Data<AppState>, file_id: w
 // get https://***/v1/files
 #[get("v1/files")]
 async fn list_file(headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
@@ -117,9 +117,9 @@ async fn list_file(headers: HttpRequest, data: web::Data<AppState>) -> Result<im
 // get https://***/v1/files/{file_id}
 #[get("v1/files/{file_id}")] 
 async fn get_file(headers: HttpRequest, data: web::Data<AppState>, file_id: web::Path<i32>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
@@ -150,9 +150,9 @@ async fn get_file(headers: HttpRequest, data: web::Data<AppState>, file_id: web:
 // get https://***/v1/files/{file_id}/content
 #[get("v1/files/{file_id}/content")]
 async fn get_file_content(headers: HttpRequest, data: web::Data<AppState>, file_id: web::Path<i32>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers, config) {
+    // 0. Check if the API Key in the request headers matches the database
+    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
+    if !api_key_valid {
         let error_response = ErrorResponse {
             error: "Invalid API Key.".into(),
         };
