@@ -7,7 +7,7 @@ use crate::utils::check_api_key_db;
 
 
 // Define supported models
-const SUPPORTED_MODELS: [&str; 2] = ["chatchat", "copilot"];
+const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
 
 #[get("/health")]
 pub async fn health() -> impl Responder {

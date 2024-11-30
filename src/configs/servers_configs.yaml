@@ -14,3 +14,11 @@ euler_copilot:
   # The IP and port where the Copilot model is deployed
   get_answer: "http://x.x.x.x:32230/kb/get_answer"
   get_stream_answer: "http://x.x.x.x:32230/kb/get_stream_answer"
+
+vllm:
+  completion: "http://x.x.x.x:8000/v1/chat/completions"
+  model_name: "Qwen/Qwen2.5-1.5B-Instruct"  # the model of vllm
+
+mindie:
+  completion: "http://x.x.x.x:1025/v1/chat/completions"
+  model_name: "Qwen-7B-Chat"  # the model of mindie
