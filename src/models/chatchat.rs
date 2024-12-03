@@ -20,44 +20,123 @@ use crate::database::files::{add_file_object, FileObject};
 pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
     // 2. Construct the request body for the chatchat API
     let server_config = load_server_config().map_err(|err| format!("Failed to load server config: {}", err))?;
-    let stream = req_body.stream.unwrap_or(false).clone();
-    let request_body = json!({
-        "model": &server_config.chatchat.model_name,
-        "messages": req_body.messages,
-        "temperature": req_body.temperature.unwrap_or(0.3).clone(),
-        // "top_p": req_body.top_p.unwrap_or(1),             // cursor verify failed
-        "n": req_body.n.unwrap_or(1).clone(),
-        "stream": stream,
-        "stop": null,
-        "max_tokens": req_body.max_tokens.unwrap_or(32768).clone(),    // 与模型有关
-        "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
-        "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
-        "logit_bias": null,
-        "user": req_body.user.clone(),
-    });
+    let stream = req_body.stream.unwrap_or(true).clone();
 
-    // Use reqwest to initiate a POST request
-    let client = Client::new();
-    let response = match client.post(&server_config.chatchat.completion)
-        .header("Content-Type", "application/json")
-        .json(&request_body)
-        .send()
-        .await{
-            Ok(resp) => resp, 
-            Err(err) => return Err(format!("Request failed: {}", err)),
-        };
+    if req_body.model == "vllm" {
+        let request_body = json!({
+            "model": server_config.vllm.model_name,
+            "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+            "n": req_body.n.unwrap_or(1).clone(),
+            "stream": stream,
+            "stop": null,
+            "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
+            "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
+            "logit_bias": null,
+            "user": req_body.user.clone(),
+            "max_tokens": req_body.max_tokens.unwrap_or(256).clone(),
+            "messages": req_body.messages
+        });
 
-    if stream {
-        // Handle streaming response requests
-        let body_stream = response.bytes_stream();
+        // Use reqwest to initiate a POST request
+        let client = Client::new();
+        // let response = match client.post(&server_config.chatchat.completion)
+        let response = match client.post(&server_config.vllm.completion)
+            .header("Content-Type", "application/json")
+            .json(&request_body)
+            .send()
+            .await{
+                Ok(resp) => resp, 
+                Err(err) => return Err(format!("Request failed: {}", err)),
+            };
+        if stream {
+            // Handle streaming response requests
+            let body_stream = response.bytes_stream();
 
-        // Return streaming response
-        Ok(HttpResponse::Ok()
-        .content_type("text/event-stream")
-        .streaming(body_stream))
+            // Return streaming response
+            Ok(HttpResponse::Ok()
+            .content_type("text/event-stream")
+            .streaming(body_stream))
+        } else {
+            // handle non-streaming response requests
+            completions_response_non_stream(response).await
+        }
+    } else if req_body.model == "mindie" {
+        let request_body = json!({
+            "model": server_config.mindie.model_name,
+            "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+            "n": req_body.n.unwrap_or(1).clone(),
+            "stream": stream,
+            "stop": null,
+            "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
+            "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
+            "logit_bias": null,
+            "user": req_body.user.clone(),
+            "max_tokens": req_body.max_tokens.unwrap_or(256).clone(),
+            "messages": req_body.messages
+        });
+
+        // Use reqwest to initiate a POST request
+        let client = Client::new();
+        // let response = match client.post(&server_config.chatchat.completion)
+        let response = match client.post(&server_config.mindie.completion)
+            .header("Content-Type", "application/json")
+            .json(&request_body)
+            .send()
+            .await{
+                Ok(resp) => resp, 
+                Err(err) => return Err(format!("Request failed: {}", err)),
+            };
+        if stream {
+            // Handle streaming response requests
+            let body_stream = response.bytes_stream();
+
+            // Return streaming response
+            Ok(HttpResponse::Ok()
+            .content_type("text/event-stream")
+            .streaming(body_stream))
+        } else {
+            // handle non-streaming response requests
+            completions_response_non_stream(response).await
+        }
+        
     } else {
-        // handle non-streaming response requests
-        completions_response_non_stream(response).await
+        let request_body = json!({
+            "model": &server_config.chatchat.model_name,
+            "messages": req_body.messages,
+            "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+            // "top_p": req_body.top_p.unwrap_or(1),             // cursor verify failed
+            "n": req_body.n.unwrap_or(1).clone(),
+            "stream": stream,
+            "stop": null,
+            "max_tokens": req_body.max_tokens.unwrap_or(32768).clone(),    // 与模型有关
+            "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
+            "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
+            "logit_bias": null,
+            "user": req_body.user.clone(),
+        });
+    
+        // Use reqwest to initiate a POST request
+        let client = Client::new();
+        let response = match client.post(&server_config.chatchat.completion)
+            .header("Content-Type", "application/json")
+            .json(&request_body)
+            .send()
+            .await{
+                Ok(resp) => resp, 
+                Err(err) => return Err(format!("Request failed: {}", err)),
+            };
+        if stream {
+            // Handle streaming response requests
+            let body_stream = response.bytes_stream();
+
+            // Return streaming response
+            Ok(HttpResponse::Ok()
+            .content_type("text/event-stream")
+            .streaming(body_stream))
+        } else {
+            // handle non-streaming response requests
+            completions_response_non_stream(response).await
+        }
     }
 }
 

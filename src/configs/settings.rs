@@ -21,11 +21,27 @@ pub struct EulerCopilot{
     pub get_stream_answer: String,
 }
 
+// vllm API
+#[derive(Debug, Deserialize, Clone)]
+pub struct Vllm{
+    pub completion: String,
+    pub model_name: String,
+}
+
+// mindie API
+#[derive(Debug, Deserialize, Clone)]
+pub struct Mindie{
+    pub completion: String,
+    pub model_name: String,
+}
+
 // Configuration file
 #[derive(Deserialize, Debug, Clone)]
 pub struct ServerConfig {
     pub chatchat: ChatChat,
     pub euler_copilot: EulerCopilot,
+    pub vllm: Vllm,
+    pub mindie: Mindie,
 }
 
 pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> {
