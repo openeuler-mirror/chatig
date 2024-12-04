@@ -15,6 +15,14 @@ use crate::utils::check_api_key;
 
 use crate::servers::api_schemas::{AppState, ErrorResponse, InvitationCodeRequest, InvitationCodeResponse};
 
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(get_all_invitation_codes)
+       .service(get_invitation_codes_by_user)
+       .service(delete_invitation_code_by_id)
+       .service(allocate_invitation_code_to_user)
+       .service(change_invitation_code_database_size);
+}
+
 // Invitation code database
 #[derive(Serialize, Deserialize, Debug)]
 pub struct InvitationCode {

@@ -3,3 +3,4 @@ pub mod server;
 pub mod files;
 pub mod models;
 pub mod invitation_code;
+pub mod projects;

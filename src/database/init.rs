@@ -23,6 +23,7 @@ pub async fn setup_database(database_url: String) -> Result<Pool<PostgresConnect
     let client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
     create_file_object_table(&client).await?;
     create_invitation_code_table(&client).await?;
+    create_project_object_table(&client).await?;
 
     Ok(pool) 
 }
@@ -59,5 +60,23 @@ async fn create_invitation_code_table(client: &Client) -> Result<(), Error> {
         );
     "#;
     client.execute(create_table_query, &[]).await?;
+    Ok(())
+}
+
+// Create the project object table
+async fn create_project_object_table(client: &Client) -> Result<(), Error> {
+    // 创建表
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS project_object (
+            id TEXT PRIMARY KEY,
+            object TEXT NOT NULL,
+            name TEXT NOT NULL,
+            created_at BIGINT NOT NULL,
+            archived_at BIGINT,
+            status TEXT NOT NULL
+        );
+    "#;
+    client.execute(create_table_query, &[]).await?;
+
     Ok(())
 }
