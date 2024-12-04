@@ -131,7 +131,7 @@ pub async fn generate_sk_code(client: &Client) -> Result<String, Error> {
     loop {
         let prefix = "sk-";
         let characters: Vec<char> = iter::repeat(())
-         .take(28)
+         .take(29)
          .map(|_| {
                 let num = thread_rng().gen_range(0..62);
                 match num {
