@@ -8,6 +8,14 @@ use crate::database::files::{list_file_objects, get_file_object_by_id, delete_fi
 
 use serde::Serialize;
 
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(upload_file)
+       .service(delete_file)
+       .service(list_file)
+       .service(get_file)
+       .service(get_file_content);
+}
+
 #[derive(Serialize)]
 struct DeleteFileResponse {
     id: String,

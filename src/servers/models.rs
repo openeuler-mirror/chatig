@@ -2,6 +2,12 @@ use actix_web::{get, delete, web, HttpResponse, Responder};
 
 use crate::servers::api_schemas::Model;
 
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(models)
+       .service(model_info)
+       .service(delete_model);
+}
+
 pub fn get_models() -> Vec<Model> {
     let static_models: Vec<Model> = vec![
         Model {

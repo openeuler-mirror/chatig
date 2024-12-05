@@ -9,6 +9,12 @@ use crate::utils::check_api_key_db;
 // Define supported models
 const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
 
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(health)
+       .service(rag_chat_completions)
+       .service(chat_completions);
+}
+
 #[get("/health")]
 pub async fn health() -> impl Responder {
     "OK"
