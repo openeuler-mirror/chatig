@@ -44,6 +44,7 @@ async fn main() -> std::io::Result<()> {
         .configure(servers::files::configure)
         .configure(servers::projects::configure)
         .configure(servers::invitation_code::configure)
+        .configure(servers::users::configure)
     })
     .bind(("0.0.0.0", port))?
     .run()
