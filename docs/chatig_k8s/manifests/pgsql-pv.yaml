@@ -1,0 +1,23 @@
+# pgsql-pv.yaml，用于定义数据库的物理存储
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pgsql-data-pv
+spec:
+  capacity:
+    storage: 1Gi  # 定义 PV 的存储大小
+  volumeMode: Filesystem
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Delete
+  storageClassName: local-storage
+  local:
+    path: /persist/data/kitig/pgsql
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kubernetes.io/hostname
+          operator: In
+          values:
+          - cos12

@@ -24,6 +24,7 @@ pub async fn setup_database(database_url: String) -> Result<Pool<PostgresConnect
     create_file_object_table(&client).await?;
     create_invitation_code_table(&client).await?;
     create_project_object_table(&client).await?;
+    create_user_object_table(&client).await?;
 
     Ok(pool) 
 }
@@ -78,5 +79,21 @@ async fn create_project_object_table(client: &Client) -> Result<(), Error> {
     "#;
     client.execute(create_table_query, &[]).await?;
 
+    Ok(())
+}
+
+// Create the user object table
+async fn create_user_object_table(client: &Client) -> Result<(), Error> {
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS user_object (
+            id TEXT PRIMARY KEY,
+            object TEXT NOT NULL,
+            name TEXT NOT NULL,
+            email TEXT NOT NULL,
+            role TEXT NOT NULL,
+            added_at BIGINT NOT NULL
+        );
+    "#;
+    client.execute(create_table_query, &[]).await?;
     Ok(())
 }
