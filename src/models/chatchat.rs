@@ -33,7 +33,7 @@ pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<H
             "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
             "logit_bias": null,
             "user": req_body.user.clone(),
-            "max_tokens": req_body.max_tokens.unwrap_or(256).clone(),
+            "max_tokens": req_body.max_tokens.unwrap_or(30000).clone(),
             "messages": req_body.messages
         });
 
