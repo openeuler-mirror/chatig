@@ -11,19 +11,19 @@ use std::rc::Rc;
 
 use crate::servers::invitation_code::check_invitation_code_exists;
 
-// 中间件结构体
+// middleware structure
 pub struct ApiKeyCheck {
-    db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>, // 数据库连接池
+    db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>, 
 }
 
-// 实现构造函数
+// The constructor function
 impl ApiKeyCheck {
     pub fn new(db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>) -> Self {
         Self { db_pool }
     }
 }
 
-// Transform trait 实现，用于中间件包装
+// Transform trait implementation, used for middleware wrapping
 impl<S, B> Transform<S, ServiceRequest> for ApiKeyCheck
 where
     S: Service<ServiceRequest, Response = ServiceResponse<B>, Error = Error> + 'static,
@@ -44,7 +44,7 @@ where
     }
 }
 
-// 中间件实现
+// Middleware implementation
 pub struct ApiKeyCheckMiddleware<S> {
     service: S,
     db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>,
@@ -77,7 +77,7 @@ where
             .map(|auth_str| auth_str.replace("Bearer ", ""))
             .unwrap_or_default();
 
-        // 检查 api-key 是否有效
+        // Check if the API key is valid
         let fut = self.service.call(req);
         Box::pin(async move {
             let valid = check_invitation_code_exists(&db_pool, &api_key).await;
