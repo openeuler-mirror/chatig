@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, delete, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, web, delete, Error, HttpResponse, Responder};
 use bb8::Pool;
 use bb8_postgres::PostgresConnectionManager;
 use tokio_postgres::NoTls;
@@ -10,10 +10,9 @@ use std::iter;
 use serde_yaml::to_string;
 use chrono::Utc;
 use tokio_postgres::Client;
-use crate::utils::check_api_key;
 
 
-use crate::servers::api_schemas::{AppState, ErrorResponse, InvitationCodeRequest, InvitationCodeResponse};
+use crate::servers::api_schemas::{AppState, InvitationCodeRequest, InvitationCodeResponse};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(get_all_invitation_codes)
@@ -159,18 +158,8 @@ pub async fn generate_sk_code(client: &Client) -> Result<String, Error> {
 // Get all invitation codes
 #[get("invitation")]
 pub async fn get_all_invitation_codes(
-    headers: HttpRequest, 
     data: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
-    // Check administrator privilege.
-    let config = &data.config;
-    if!check_api_key(headers, config) {
-        let error_response = ErrorResponse {
-            error: "Error admin password.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
     // Get a connection from the database connection pool.
     let client = match data.db_pool.get().await {
         Ok(client) => client,
@@ -228,18 +217,9 @@ pub async fn get_all_invitation_codes(
 // Get detail invitation code info by user
 #[get("invitation/user")]
 pub async fn get_invitation_codes_by_user(
-    headers: HttpRequest, 
     req_body: web::Json<InvitationCodeRequest>, 
     data: web::Data<AppState>
 ) -> Result<impl Responder, Error> {
-    // Check administrator privilege.
-    let config = &data.config;
-    if!check_api_key(headers, config) {
-        let error_response = ErrorResponse {
-            error: "Error admin password.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
 
     let client = match data.db_pool.get().await {
         Ok(client) => client,
@@ -297,18 +277,9 @@ pub async fn get_invitation_codes_by_user(
 // Delete invitation code by id
 #[delete("invitation/{id}")]
 pub async fn delete_invitation_code_by_id(
-    headers: HttpRequest, 
     path: web::Path<i32>, // Get the id through the path parameter. Here the type is modified to i32, corresponding to the id field type in the database.
     data: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
-    // Check administrator privilege.
-    let config = &data.config;
-    if!check_api_key(headers, config) {
-        let error_response = ErrorResponse {
-            error: "Error admin password.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
     
     let id = path.into_inner();
 
@@ -343,18 +314,8 @@ pub async fn delete_invitation_code_by_id(
 #[post("invitation")]
 pub async fn allocate_invitation_code_to_user(
     req_body: web::Json<InvitationCodeRequest>, 
-    headers: HttpRequest, 
     data: web::Data<AppState>
 ) -> Result<impl Responder, Error> {
-
-    // Check administrator privilege.
-    let config = &data.config;
-    if!check_api_key(headers, config) {
-        let error_response = ErrorResponse {
-            error: "Error admin password.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
         
     // Save the invitation code to PostgreSQL.
     let pool = &data.db_pool;
@@ -433,18 +394,9 @@ struct ChangeSizeRequest {
 // Increase or decrease the number of records in the database.
 #[post("chatig")]
 pub async fn change_invitation_code_database_size(
-    headers: HttpRequest, 
     req_body: web::Json<ChangeSizeRequest>,
     data: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
-    // Check administrator privilege.
-    let config = &data.config;
-    if!check_api_key(headers, config) {
-        let error_response = ErrorResponse {
-            error: "Error admin password.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
 
     let target_size = req_body.target_size;
 

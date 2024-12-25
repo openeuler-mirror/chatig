@@ -1,10 +1,8 @@
-use actix_web::{get, post, web, Error, HttpRequest, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse, Responder};
 
-use crate::servers::api_schemas::{ChatCompletionRequest, ErrorResponse, AppState};
+use crate::servers::api_schemas::{ChatCompletionRequest, ErrorResponse};
 use crate::models::copilot;
 use crate::models::chatchat;
-use crate::utils::check_api_key_db;
-
 
 // Define supported models
 const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
@@ -21,16 +19,7 @@ pub async fn health() -> impl Responder {
 }
 
 #[post("/v1/chat/completions")]
-pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>, headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the database
-    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
-    if !api_key_valid {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
+pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
         let error_response = ErrorResponse {
@@ -80,16 +69,7 @@ pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>, header
 }
 
 #[post("/v1/rag/completions")]
-pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>, headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the database
-    let api_key_valid = check_api_key_db(headers, data.clone()).await?;
-    if !api_key_valid {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
+pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
         let error_response = ErrorResponse {

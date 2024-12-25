@@ -59,16 +59,9 @@ pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> 
 }
 
 // ---------------------------------------------- Config ----------------------------------------------
-// API Key
-#[derive(Debug, Deserialize, Clone)]
-pub struct ApiKey{
-    pub value: String,
-}
-
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
     pub temp_docs_path: String,
-    pub apikey: ApiKey,
     pub port: u16,
     pub database: String,
 }

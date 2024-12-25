@@ -1,7 +1,6 @@
 use actix_web::{get, post, web, Error, HttpRequest, HttpResponse, Responder};
 use std::collections::HashMap;
 
-use crate::utils::check_api_key;
 use crate::servers::api_schemas::{AppState, ErrorResponse};
 use crate::database::projects::{list_project_objects, create_project_object, retrieve_project_object, 
     modify_project_object, archive_project_object, ProjectObject};
@@ -17,15 +16,6 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 // list projects
 #[get("/v1/organization/projects")]
 async fn list_projects(headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers.clone(), config) {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
     // 1. get parameters from query string
     let query = headers.query_string();
     let params: HashMap<String, String> = serde_urlencoded::from_str(query).unwrap_or_default();
@@ -49,16 +39,7 @@ async fn list_projects(headers: HttpRequest, data: web::Data<AppState>) -> Resul
 
 // create project
 #[post("/v1/organization/projects")]
-async fn create_project(headers: HttpRequest, data: web::Data<AppState>, project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers.clone(), config) {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
+async fn create_project(data: web::Data<AppState>, project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. create project object
     let pool = &data.db_pool;
     let name = project_name.get("name").cloned().unwrap_or_default();
@@ -86,16 +67,7 @@ async fn create_project(headers: HttpRequest, data: web::Data<AppState>, project
 
 // retrieve project
 #[get("/v1/organization/projects/{project_id}")]
-async fn retrieve_project(headers: HttpRequest, data: web::Data<AppState>, project_id: web::Path<String>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers.clone(), config) {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
+async fn retrieve_project(data: web::Data<AppState>, project_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. retrieve project object
     let pool = &data.db_pool;
     let project_id = project_id.into_inner();
@@ -113,16 +85,7 @@ async fn retrieve_project(headers: HttpRequest, data: web::Data<AppState>, proje
 
 // modify project
 #[post("/v1/organization/projects/{project_id}")]
-async fn modify_project(headers: HttpRequest, data: web::Data<AppState>, project_id: web::Path<String>, project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers.clone(), config) {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-    
+async fn modify_project(data: web::Data<AppState>, project_id: web::Path<String>, project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. modify project object
     let pool = &data.db_pool;
     let project_id = project_id.into_inner();
@@ -141,16 +104,7 @@ async fn modify_project(headers: HttpRequest, data: web::Data<AppState>, project
 
 // archive project
 #[post("/v1/organization/projects/{project_id}/archive")]
-async fn archive_project(headers: HttpRequest, data: web::Data<AppState>, project_id: web::Path<String>) -> Result<impl Responder, Error> {
-    // 0. Check if the API Key in the request headers matches the config
-    let config = &data.config;
-    if !check_api_key(headers.clone(), config) {
-        let error_response = ErrorResponse {
-            error: "Invalid API Key.".into(),
-        };
-        return Ok(HttpResponse::Unauthorized().json(error_response));
-    }
-
+async fn archive_project(data: web::Data<AppState>, project_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. archive project object
     let pool = &data.db_pool;
     let project_id = project_id.into_inner();
