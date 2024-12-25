@@ -470,6 +470,7 @@ dependencies = [
  "actix-cors",
  "actix-multipart",
  "actix-rt",
+ "actix-service",
  "actix-web",
  "async-stream",
  "bb8",
