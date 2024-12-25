@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer, web};
-use crate::configs::settings::load_config;
+use configs::settings::GLOBAL_CONFIG;
+use database::diesel::{establish_connection, run_migrations};
 use crate::servers::api_schemas::AppState;
 use crate::database::init::setup_database;
 use crate::servers::invitation_code::generate_and_save_invitation_codes;
@@ -10,6 +11,7 @@ mod models;
 mod configs;
 mod utils;
 mod database;
+mod schema;
 
 #[cfg(test)]
 mod test;
@@ -17,8 +19,12 @@ mod test;
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     // Set up the AppState struct
-    let config = load_config()
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to load config: {}", e)))?;
+    let config = &*GLOBAL_CONFIG;
+
+    let pool = establish_connection();
+    let mut conn = pool.get().expect("Failed to get connection from pool");
+    run_migrations(&mut conn);
+
     let db_pool = setup_database(config.clone().database).await
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
     let app_state = AppState { config: config.clone(), db_pool: db_pool.clone() };
