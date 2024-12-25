@@ -1,3 +1,4 @@
+use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
 use configs::settings::GLOBAL_CONFIG;
 use database::diesel::{establish_connection, run_migrations};
