@@ -1,6 +1,7 @@
 use serde::Deserialize;
 use std::fs::{File, metadata};
 use std::io::Read;
+use once_cell::sync::Lazy;
 use serde_yaml;
 
 // ---------------------------------------------- Server Config ----------------------------------------------
@@ -65,15 +66,19 @@ pub struct Config {
     pub database: String,
 }
 
-pub fn load_config() -> Result<Config, Box<dyn std::error::Error>> {
-    let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-        "/etc/chatig/configs.yaml"
-    } else {
-        "src/configs/configs.yaml"
-    };
-    let mut file = File::open(config_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let config: Config = serde_yaml::from_str(&contents)?;
-    Ok(config)
+impl Config {
+    pub fn load_config() -> Config {
+        let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+            "/etc/chatig/configs.yaml"
+        } else {
+            "src/configs/configs.yaml"
+        };
+        let mut file = File::open(config_path).expect("Failed to open config file");
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).expect("Failed to read config file");
+        serde_yaml::from_str(&contents).expect("Failed to parse config file")
+    }
 }
+
+// 全局静态配置对象
+pub static GLOBAL_CONFIG: Lazy<Config> = Lazy::new(|| Config::load_config());
