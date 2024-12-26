@@ -1,7 +1,6 @@
 use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
 use configs::settings::GLOBAL_CONFIG;
-use database::diesel::{establish_connection, run_migrations};
 use crate::servers::api_schemas::AppState;
 use crate::database::init::setup_database;
 use crate::servers::invitation_code::generate_and_save_invitation_codes;
@@ -22,10 +21,6 @@ mod test;
 async fn main() -> std::io::Result<()> {
     // Set up the AppState struct
     let config = &*GLOBAL_CONFIG;
-
-    let pool = establish_connection();
-    let mut conn = pool.get().expect("Failed to get connection from pool");
-    run_migrations(&mut conn);
 
     let db_pool = setup_database(config.clone().database).await
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
