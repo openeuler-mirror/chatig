@@ -9,7 +9,8 @@ use bb8_postgres::PostgresConnectionManager;
 use tokio_postgres::NoTls;
 use std::rc::Rc;
 
-use crate::servers::invitation_code::check_invitation_code_exists;
+// use crate::servers::invitation_code::check_invitation_code_exists;
+use crate::apis::control_api::invitation_code::check_invitation_code_exists;
 
 // middleware structure
 pub struct ApiKeyCheck {

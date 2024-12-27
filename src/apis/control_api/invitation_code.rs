@@ -12,7 +12,10 @@ use chrono::Utc;
 use tokio_postgres::Client;
 
 
-use crate::servers::api_schemas::{AppState, InvitationCodeRequest, InvitationCodeResponse};
+// use crate::servers::api_schemas::{AppState, InvitationCodeRequest, InvitationCodeResponse};
+use crate::utils::AppState;
+use crate::apis::control_api::schemas::{InvitationCodeRequest, InvitationCodeResponse};
+
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(get_all_invitation_codes)

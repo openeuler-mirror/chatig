@@ -46,11 +46,12 @@ pub struct ServerConfig {
 }
 
 pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> {
-    let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-        "/etc/chatig/servers_configs.yaml"
-    } else {
-        "src/configs/servers_configs.yaml"
-    };
+    // let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+    //     "/etc/chatig/servers_configs.yaml"
+    // } else {
+    //     "src/configs/servers_configs.yaml"
+    // };
+    let config_path = "src/configs/servers_configs.yaml";
     let mut file = File::open(config_path)?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
@@ -68,11 +69,12 @@ pub struct Config {
 
 impl Config {
     pub fn load_config() -> Config {
-        let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-            "/etc/chatig/configs.yaml"
-        } else {
-            "src/configs/configs.yaml"
-        };
+        // let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+        //     "/etc/chatig/configs.yaml"
+        // } else {
+        //     "src/configs/configs.yaml"
+        // };
+        let config_path = "src/configs/configs.yaml";
         let mut file = File::open(config_path).expect("Failed to open config file");
         let mut contents = String::new();
         file.read_to_string(&mut contents).expect("Failed to read config file");

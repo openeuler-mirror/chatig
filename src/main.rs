@@ -1,18 +1,20 @@
-use actix_cors::Cors;
 use actix_web::{App, HttpServer, web};
-use configs::settings::GLOBAL_CONFIG;
-use crate::servers::api_schemas::AppState;
-use crate::database::init::setup_database;
-use crate::servers::invitation_code::generate_and_save_invitation_codes;
-use crate::middleware::api_key::ApiKeyCheck;
+use actix_cors::Cors;
 use std::rc::Rc;
 
-mod servers;
-mod models;
+mod apis;
+mod cores;
 mod configs;
 mod database;
-mod schema;
 mod middleware;
+mod utils;
+mod schema;
+
+use crate::configs::settings::GLOBAL_CONFIG;
+use crate::utils::AppState;
+use crate::database::init::setup_database;
+use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
+use crate::middleware::api_key::ApiKeyCheck;
 
 #[cfg(test)]
 mod test;
@@ -45,12 +47,12 @@ async fn main() -> std::io::Result<()> {
             .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             // .wrap(ApiKeyCheck::new(db_pool.clone()))
             .app_data(app_state.clone())
-            .configure(servers::server::configure)
-            .configure(servers::models::configure)
-            .configure(servers::files::configure)
-            .configure(servers::projects::configure)
-            .configure(servers::invitation_code::configure)
-            .configure(servers::users::configure)
+            .configure(apis::models_api::chat::configure)
+            .configure(apis::control_api::models::configure)
+            .configure(apis::funcs_api::files::configure)
+            .configure(apis::control_api::projects::configure)
+            .configure(apis::control_api::invitation_code::configure)
+            .configure(apis::control_api::users::configure)
     }) 
     .bind(("0.0.0.0", port))?
     .run()

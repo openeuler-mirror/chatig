@@ -1,7 +1,7 @@
 #[cfg(test)]
 pub mod tests {
     use actix_web::{test, App};
-    use crate::servers::server::health;
+    use crate::apis::models_api::chat::health;
 
     #[actix_rt::test]
     async fn test_health() {
