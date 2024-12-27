@@ -1,3 +1,4 @@
-pub mod funs;
-pub mod models;
-pub mod control;
+pub mod chat_completions;
+pub mod chatchat;
+pub mod copilot;
+pub mod schemas;

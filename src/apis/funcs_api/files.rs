@@ -2,10 +2,10 @@ use actix_web::{get, post, web, delete, Error, HttpResponse, Responder};
 use actix_multipart::Multipart;
 
 // use crate::models::chatchat::upload_temp_docs;
-use crate::cores::funs::chatchat::upload_temp_docs;
+use crate::cores::chatchat::upload_temp_docs;
 use crate::utils::AppState;
 use crate::apis::schemas::ErrorResponse;
-use crate::database::files::{list_file_objects, get_file_object_by_id, delete_file_object};
+use crate::meta::files::{list_file_objects, get_file_object_by_id, delete_file_object};
 
 use serde::Serialize;
 

@@ -7,7 +7,7 @@ use futures::stream::StreamExt;    // For try_future and try_next
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 // use crate::models::api_schemas::{CompletionsResponse, CompletionsStreamResponse, KbChatResponse, KbChatStreamResponse, OpenAIStreamResponse, UploadTempDocsResponse, 
 //     FileChatResponse, FileStreamChatResponse, FileDocStreamChatResponse, OpenAIDeltaMessage, OpenAIStreamChoice};
-use crate::cores::models::schemas::{CompletionsResponse, CompletionsStreamResponse};
+use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::configs::settings::load_server_config;
 
 

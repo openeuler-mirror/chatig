@@ -2,8 +2,8 @@ use actix_web::{get, post, web, Error, HttpResponse, Responder};
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
-use crate::cores::funs::{chatchat, copilot};
-use crate::cores::models::chat_completions;
+use crate::cores::{chatchat, copilot};
+use crate::cores::chat_completions;
 
 // Define supported models
 const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];

@@ -16,8 +16,7 @@ euler_copilot:
   get_stream_answer: "http://x.x.x.x:32230/kb/get_stream_answer"
 
 vllm:
-  # completion: "http://x.x.x.x:30647/v1/chat/completions"
-  completion: "http://192.168.0.168:30647/v1/chat/completions"
+  completion: "http://x.x.x.x:30647/v1/chat/completions"
   model_name: "Qwen/Qwen2.5-Coder-7B-Instruct"  # the model of vllm
 
 mindie:

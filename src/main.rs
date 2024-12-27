@@ -5,14 +5,14 @@ use std::rc::Rc;
 mod apis;
 mod cores;
 mod configs;
-mod database;
+mod meta;
 mod middleware;
 mod utils;
 mod schema;
 
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::utils::AppState;
-use crate::database::init::setup_database;
+use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
 

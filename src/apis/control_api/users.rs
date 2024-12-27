@@ -3,7 +3,7 @@ use std::collections::HashMap;
 
 use crate::apis::schemas::ErrorResponse;
 use crate::utils::AppState;
-use crate::database::users::{insert_user_object, list_user_objects, modify_user_object, retrieve_user_object, delete_user_object, UserObjectDto};
+use crate::meta::users::{insert_user_object, list_user_objects, modify_user_object, retrieve_user_object, delete_user_object, UserObjectDto};
 
 use serde::Serialize;
 

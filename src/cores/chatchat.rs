@@ -12,11 +12,11 @@ use std::path::Path;
 use crate::utils::AppState;
 use crate::apis::models_api::schemas::{ChatCompletionRequest, Message};
 
-use crate::cores::funs::schemas::{KbChatResponse, KbChatStreamResponse, OpenAIStreamResponse, UploadTempDocsResponse, 
+use crate::cores::schemas::{KbChatResponse, KbChatStreamResponse, OpenAIStreamResponse, UploadTempDocsResponse, 
     FileChatResponse, FileStreamChatResponse, FileDocStreamChatResponse, OpenAIDeltaMessage, OpenAIStreamChoice};
 
 use crate::configs::settings::load_server_config;
-use crate::database::files::{add_file_object, FileObject};
+use crate::meta::files::{add_file_object, FileObject};
                                       
 
 // knowledge base chat completions
