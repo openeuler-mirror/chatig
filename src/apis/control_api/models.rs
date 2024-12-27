@@ -1,6 +1,7 @@
 use actix_web::{get, delete, web, HttpResponse, Responder};
 
-use crate::servers::api_schemas::Model;
+use crate::apis::control_api::schemas::Model;
+
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(models)

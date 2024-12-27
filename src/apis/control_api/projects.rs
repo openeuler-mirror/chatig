@@ -1,8 +1,11 @@
 use actix_web::{get, post, web, Error, HttpRequest, HttpResponse, Responder};
 use std::collections::HashMap;
 
-use crate::servers::api_schemas::{AppState, ErrorResponse};
-use crate::database::projects::{list_project_objects, create_project_object, retrieve_project_object, 
+// use crate::servers::api_schemas::{AppState, ErrorResponse};
+use crate::utils::AppState;
+use crate::apis::schemas::ErrorResponse;
+
+use crate::meta::projects::{list_project_objects, create_project_object, retrieve_project_object, 
     modify_project_object, archive_project_object, ProjectObject};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {

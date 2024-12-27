@@ -1,8 +1,9 @@
 use actix_web::{get, delete, post, web, Error, HttpRequest, HttpResponse, Responder};
 use std::collections::HashMap;
 
-use crate::servers::api_schemas::{AppState, ErrorResponse};
-use crate::database::users::{insert_user_object, list_user_objects, modify_user_object, retrieve_user_object, delete_user_object, UserObjectDto};
+use crate::apis::schemas::ErrorResponse;
+use crate::utils::AppState;
+use crate::meta::users::{insert_user_object, list_user_objects, modify_user_object, retrieve_user_object, delete_user_object, UserObjectDto};
 
 use serde::Serialize;
 

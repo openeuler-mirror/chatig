@@ -1,28 +1,8 @@
 use core::str;
-
 use serde::{Deserialize, Serialize};
 
-// ------------------------------------------ OpenAI ------------------------------------------ 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct OpenAIDeltaMessage {
-    pub content: String,
-}
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct OpenAIStreamChoice{
-    pub index: u32,
-    pub delta: OpenAIDeltaMessage,
-    pub finish_reason: String,
-}
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct OpenAIStreamResponse {
-    pub id: String,              // Unique identifier for each generated response.
-    pub model: String,           // Name of the model used.
-    pub choices: Vec<OpenAIStreamChoice>,    // List of generated text options returned.
-}
-
-// ------------------------------------------ ChatChat ------------------------------------------ 
 // Define the API format accepted by the interface
 #[derive(Deserialize, Serialize)]
 pub struct CompletionsResponse {
@@ -62,32 +42,6 @@ pub struct CompletionsUsage {
 }
 
 
-// {
-//     "id": "chat14fca83e-2808-467b-8f06-8693aefa35f0",
-//     "choices": [
-//         {
-//             "delta": {
-//                 "content": "",
-//                 "function_call": null,
-//                 "refusal": null,
-//                 "role": "assistant",
-//                 "tool_calls": null
-//             },
-//             "finish_reason": null,
-//             "index": 0,
-//             "logprobs": null
-//         }
-//     ],
-//     "created": 1731289075,
-//     "model": "glm4-chat",
-//     "object": "chat.completion.chunk",
-//     "service_tier": null,
-//     "system_fingerprint": null,
-//     "usage": null,
-//     "message_id": null,
-//     "status": null
-// }
-
 #[derive(Deserialize, Serialize)]
 pub struct CompletionsStreamResponse {
     pub id: String,              // Unique identifier for each generated response.
@@ -119,6 +73,28 @@ pub struct CompletionsDelta {
     pub tool_calls: Option<Vec<String>>, // Tool calls.
 }
 
+
+// ------------------------------------------ OpenAI ------------------------------------------ 
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAIDeltaMessage {
+    pub content: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAIStreamChoice{
+    pub index: u32,
+    pub delta: OpenAIDeltaMessage,
+    pub finish_reason: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct OpenAIStreamResponse {
+    pub id: String,              // Unique identifier for each generated response.
+    pub model: String,           // Name of the model used.
+    pub choices: Vec<OpenAIStreamChoice>,    // List of generated text options returned.
+}
+
+// ------------------------------------------ ChatChat ------------------------------------------ 
 // Define the API format accepted by the interface
 #[derive(Deserialize, Serialize)]
 pub struct KbChatResponse {
@@ -235,3 +211,5 @@ pub struct GetAnswerResponse{
 pub struct GetStreamAnswerResponse{
     pub content: String,
 }
+
+

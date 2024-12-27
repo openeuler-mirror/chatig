@@ -1,8 +1,9 @@
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
 
-use crate::servers::api_schemas::{ChatCompletionRequest, ErrorResponse};
-use crate::models::copilot;
-use crate::models::chatchat;
+use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::apis::schemas::ErrorResponse;
+use crate::cores::{chatchat, copilot};
+use crate::cores::chat_completions;
 
 // Define supported models
 const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
@@ -10,7 +11,7 @@ const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
        .service(rag_chat_completions)
-       .service(chat_completions);
+       .service(completions);
 }
 
 #[get("/health")]
@@ -19,7 +20,7 @@ pub async fn health() -> impl Responder {
 }
 
 #[post("/v1/chat/completions")]
-pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
+pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
         let error_response = ErrorResponse {
@@ -56,7 +57,7 @@ pub async fn chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Res
             }
         }
     } else {
-        let response = chatchat::completions(req_body).await;
+        let response = chat_completions::completions(req_body).await;
 
         match response {
             Ok(resp) => Ok(resp),
