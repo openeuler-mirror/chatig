@@ -37,7 +37,7 @@ pub struct ChatCompletionRequest {
     pub file_id: Option<String>,            // File ID to identify the file.
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
@@ -68,5 +68,34 @@ pub struct ChatCompletionResponse {
     pub choices: Vec<Choice>,    // List of generated text options returned.
 }
 
+// Define the request struct, corresponding to the request parameters of the /v1/embeddings interface.
+#[derive(Deserialize, Serialize)]
+pub struct EmbeddingRequest {
+    pub input: Vec<String>,
+    pub model: String,
+    #[allow(dead_code)]
+    pub encoding_format: Option<String>,  // Optional, used to specify the format of the returned embedding vectors.
+    #[allow(dead_code)]
+    pub dimensions: Option<u32>,          // Optional, used to specify the dimension number of the generated embeddings.
+    #[allow(dead_code)]
+    pub user: Option<String>,            // Optional, represents the unique identifier of the end user.
+}
+
+// Define the response struct, corresponding to the response data format of the /v1/embeddings interface.
+#[derive(Serialize, Deserialize)]
+pub struct EmbeddingResponse {
+    pub object: String,
+    pub data: Vec<EmbeddingData>,
+    pub model: String,
+    pub usage: Usage,
+}
+
+// Embedding data struct, which is part of the EmbeddingResponse.
+#[derive(Serialize, Deserialize)]
+pub struct EmbeddingData {
+    pub object: String,
+    pub embedding: Vec<f32>,
+    pub index: usize,
+}
 
 
