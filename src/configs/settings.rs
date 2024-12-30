@@ -64,6 +64,8 @@ pub struct Config {
     pub temp_docs_path: String,
     pub port: u16,
     pub database: String,
+    pub connection_num: u32,
+    pub database_type: String,
 }
 
 impl Config {

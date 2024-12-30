@@ -1,19 +1,19 @@
 use bb8::{Pool, PooledConnection};
 use bb8_postgres::PostgresConnectionManager;
 use tokio_postgres::NoTls;
-use std::env;
+use crate::configs::settings::GLOBAL_CONFIG;
 use std::error;
 use tokio_postgres::{Client, Error};
 
-pub async fn setup_database(database_url: String) -> Result<Pool<PostgresConnectionManager<NoTls>>, Box<dyn error::Error>> {
+pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, Box<dyn error::Error>> {
     dotenv::dotenv().ok();
 
     // Read the database URL from the environment variables if it exists, otherwise use the provided database_url
-    let env_database_url = env::var("DATABASE_URL").unwrap_or(database_url);
-    println!("Using database URL: {}", env_database_url);
+    let config = &*GLOBAL_CONFIG;
+    println!("Using database URL: {}", config.database);
 
     // Create a Postgres connection manager
-    let manager = PostgresConnectionManager::new_from_stringlike(env_database_url, NoTls)?;
+    let manager = PostgresConnectionManager::new_from_stringlike(config.database.clone(), NoTls)?;
 
     // Create a connection pool
     let pool = Pool::builder().build(manager).await?;

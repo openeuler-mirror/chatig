@@ -32,4 +32,5 @@ diesel = { version = "2.0", features = ["postgres","r2d2"] }
 dotenvy = "0.15"
 once_cell = "1.18"
 r2d2 = "0.8"
-diesel_migrations = "2.0"  
+async-trait = "0.1.83"
+sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "mysql", "postgres"] }
