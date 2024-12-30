@@ -12,3 +12,6 @@ port: 8081
 
 # database
 database: "postgres://chatig:chatig@localhost/chatig"
+connection_num: 10
+# pgsql/mysql
+database_type: "pgsql"

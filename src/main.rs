@@ -24,8 +24,10 @@ async fn main() -> std::io::Result<()> {
     // Set up the AppState struct
     let config = &*GLOBAL_CONFIG;
 
-    let db_pool = setup_database(config.clone().database).await
+    let db_pool = setup_database().await
     .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
+    meta::connection::setup_database().await
+    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e))).unwrap();
     let app_state = web::Data::new(AppState { config: config.clone(), db_pool: db_pool.clone() });
 
     generate_and_save_invitation_codes(&db_pool).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
