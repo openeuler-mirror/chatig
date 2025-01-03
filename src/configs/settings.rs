@@ -36,6 +36,14 @@ pub struct Mindie{
     pub model_name: String,
 }
 
+// mindie API
+#[derive(Debug, Deserialize, Clone)]
+pub struct Embeddings{
+    pub get_embedding: String,
+    #[allow(dead_code)]
+    pub model_name: String,
+}
+
 // Configuration file
 #[derive(Deserialize, Debug, Clone)]
 pub struct ServerConfig {
@@ -43,6 +51,7 @@ pub struct ServerConfig {
     pub euler_copilot: EulerCopilot,
     pub vllm: Vllm,
     pub mindie: Mindie,
+    pub embeddings: Embeddings,
 }
 
 pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> {
