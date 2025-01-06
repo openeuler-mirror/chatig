@@ -47,7 +47,6 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
-            // .wrap(ApiKeyCheck::new(db_pool.clone()))
             .app_data(app_state.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)

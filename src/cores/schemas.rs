@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 
 // Define the API format accepted by the interface
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CompletionsResponse {
     pub id: String,              // Unique identifier for each generated response.
     pub choices: Vec<CompletionsChoice>,    // List of generated text options returned.
@@ -17,7 +17,7 @@ pub struct CompletionsResponse {
     pub message_id: Option<String>, // Unique identifier for the message.
     pub status: Option<String>,  // Status of the request.
 }
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CompletionsChoice {
     pub finish_reason: String,   // Reason for finishing the completion.
     pub index: u32,              // Index of the completion.
@@ -25,7 +25,7 @@ pub struct CompletionsChoice {
     pub message: CompletionsAssistantMessage, // Message object containing the completion.
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CompletionsAssistantMessage{
     pub content: String,        // Content of the completion.
     pub refusal: Option<String>, // Refusal message.
@@ -34,7 +34,7 @@ pub struct CompletionsAssistantMessage{
     pub tool_calls: Option<Vec<String>>, // Tool calls.
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct CompletionsUsage {
     pub completion_tokens: u32,  // Number of tokens used for the completion.
     pub prompt_tokens: u32,      // Number of tokens used for the prompt.
