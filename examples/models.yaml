@@ -1,0 +1,8 @@
+- id: "Qwen-7B-Chat"
+  object: "model"
+  created: 1633024800
+  owned_by: "user1"
+- id: "Qwen2.5-7B-instruct"
+  object: "model"
+  created: 1633111200
+  owned_by: "user2"

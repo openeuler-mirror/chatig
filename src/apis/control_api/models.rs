@@ -1,6 +1,7 @@
 use actix_web::{get, delete, web, HttpResponse, Responder};
+use serde_json::json;
 
-use crate::apis::control_api::schemas::Model;
+use crate::cores::models::{get_model, get_models};
 
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -9,44 +10,49 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
        .service(delete_model);
 }
 
-pub fn get_models() -> Vec<Model> {
-    let static_models: Vec<Model> = vec![
-        Model {
-        id: "chatchat".to_string(),
-        object: "model".to_string(),
-        created: 1686935002,  
-        owned_by: "culinux".to_string(),
-        },
-        Model {
-            id: "copilot".to_string(),
-            object: "model".to_string(),
-            created: 1686935002,
-            owned_by: "openeuler".to_string(),
-        },
-    ];
-    static_models
-}
-
 // Lists the currently available models, and provides basic information about each one such as the owner and availability.
 #[get("/v1/models")]
 pub async fn models() -> impl Responder {
-    let models = get_models();
-    HttpResponse::Ok().json(models)
+    match get_models().await {
+        Ok(models) => {
+            // 成功获取模型数据，返回 JSON 响应
+            HttpResponse::Ok().json(models)
+        }
+        Err(err) => {
+            // 处理错误，返回 500 状态码和错误信息
+            HttpResponse::InternalServerError().json(json!({
+                "error": "Failed to fetch models",
+                "details": err.to_string()
+            }))
+        }
+    }
 }
 
 // Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
 #[get("/v1/models/{model}")]
 pub async fn model_info(path: web::Path<String>) -> impl Responder {
-    let model_name = path.into_inner();
-    //let model = SUPPORTED_MODELS.iter().find(|&m| m == &model_name);
-    let all_models = get_models();
-    let model = all_models.iter().find(|&m| m.id == model_name);
-    match model {
-        Some(model) => {
-            let json_model = serde_json::to_value(model).unwrap();
-            HttpResponse::Ok().json(json_model)
+    let model_name = path.into_inner(); // 提取路径参数
+
+    // 调用封装的函数查询指定模型
+    match get_model(&model_name).await {
+        Ok(Some(model)) => {
+            // 查询成功，返回模型信息
+            HttpResponse::Ok().json(model)
         }
-        None => HttpResponse::NotFound().body("Model not found"),
+        Ok(None) => {
+            // 查询结果为空，返回 404
+            HttpResponse::NotFound().json(json!({
+                "error": "Model not found",
+                "model_name": model_name
+            }))
+        }
+        Err(err) => {
+            // 查询出现错误，返回 500
+            HttpResponse::InternalServerError().json(json!({
+                "error": "Failed to fetch model info",
+                "details": err.to_string()
+            }))
+        }
     }
 }
 

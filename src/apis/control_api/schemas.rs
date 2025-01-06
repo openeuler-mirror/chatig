@@ -10,7 +10,7 @@ From https://platform.openai.com/docs/api-reference/models/object
   "owned_by": "openai"
 }
 */
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Model {
     pub id: String,
     pub object: String,
