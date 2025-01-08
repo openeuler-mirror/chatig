@@ -1,4 +1,6 @@
-use actix_web::{web, HttpResponse};
+use actix_web::{web, HttpResponse, Error};
+use actix_web::error::ErrorInternalServerError;
+use async_trait::async_trait;
 use bytes::Bytes;
 use reqwest::{Client, Response};
 use serde_json::{Value, json};
@@ -8,62 +10,70 @@ use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{GetAnswerResponse, GetStreamAnswerResponse};
 use crate::configs::settings::load_server_config;
 
+use crate::cores::rag_apps::rag_controller::RAGController;
 
-pub async fn get_answer(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
-    // 1. Find the content of the last message with role "user"
-    let mut query = String::new();
-    for message in req_body.messages.iter().rev() {
-        if message.role == "user" {
-            query = message.content.clone();
-            break;
-        }
-    }
+pub struct CopilotRAG;
 
-    // 2. Construct the request body for the chatchat API
-    let request_body = json!({
-        "question": query,
-        "kb_sn": "default test",
-        "session_id": "",
-        "qa_record_id": "",
-        "fetch_source": "true",
-        "user_selected_plugins": [
-            {
-                "plugin_name": "",
-                "plugin_auth": ""
+#[async_trait]
+impl RAGController for CopilotRAG {
+    async fn rag_chat_completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
+        // 1. Find the content of the last message with role "user"
+        let mut query = String::new();
+        for message in req_body.messages.iter().rev() {
+            if message.role == "user" {
+                query = message.content.clone();
+                break;
             }
-        ]
-    });
+        }
 
-    // Use reqwest to initiate a POST request
-    let stream = req_body.stream.unwrap_or(false).clone();
-    let server_config = load_server_config().map_err(|err| format!("Failed to load server config: {}", err))?;
-    let answer_url = if stream { &server_config.euler_copilot.get_stream_answer } else { &server_config.euler_copilot.get_answer };
-    let model = req_body.model.clone();
+        // 2. Construct the request body for the chatchat API
+        let request_body = json!({
+            "question": query,
+            "kb_sn": "default test",
+            "session_id": "",
+            "qa_record_id": "",
+            "fetch_source": "true",
+            "user_selected_plugins": [
+                {
+                    "plugin_name": "",
+                    "plugin_auth": ""
+                }
+            ]
+        });
 
-    let client = Client::new();
-    let response = match client.post(answer_url)
-    .json(&request_body)
-    .send()
-    .await{
-        Ok(resp) => resp, 
-        Err(err) => return Err(format!("Request failed: {}", err)),
-    };
+        // Use reqwest to initiate a POST request
+        let stream = req_body.stream.unwrap_or(false).clone();
+        let server_config = load_server_config()
+            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
+        let answer_url = if stream { &server_config.euler_copilot.get_stream_answer } else { &server_config.euler_copilot.get_answer };
+        let model = req_body.model.clone();
 
-    if stream {
-        // Handle streaming response requests
-        response_stream(response, model).await
-    } else {
-        // handle non-streaming response requests
-        response_non_stream(response, model).await
+        let client = Client::new();
+        let response = match client.post(answer_url)
+        .json(&request_body)
+        .send()
+        .await{
+            Ok(resp) => resp, 
+            Err(err) => return Err(ErrorInternalServerError(err.to_string())),
+        };
+
+        if stream {
+            // Handle streaming response requests
+            response_stream(response, model).await.map_err(Error::from)
+        } else {
+            // handle non-streaming response requests
+            response_non_stream(response, model).await.map_err(Error::from)
+        }
     }
 }
 
 // Handle non-streaming response requests
-async fn response_non_stream(response: Response, model: String) -> Result<HttpResponse, String> {
+async fn response_non_stream(response: Response, model: String) -> Result<HttpResponse, Error> {
     // Parse the JSON response body into the GetAnswerResponse struct
-    let response_json: Value = response.json().await.map_err(|err| format!("Failed to parse response as JSON: {}", err))?;
+    let response_json: Value = response.json().await
+        .map_err(|err| ErrorInternalServerError(format!("Failed to parse response as JSON: {}", err)))?;
     let chat_response: GetAnswerResponse = serde_json::from_value(response_json)
-        .map_err(|err| format!("Failed to deserialize into GetAnswerResponse: {}", err))?;
+        .map_err(|err| ErrorInternalServerError(format!("Failed to deserialize into GetAnswerResponse: {}", err)))?;
 
     // Create a timestamp
     let timestamp = chrono::Utc::now().timestamp() as u64;
@@ -95,7 +105,7 @@ async fn response_non_stream(response: Response, model: String) -> Result<HttpRe
 }
 
 // Handle streaming response requests
-async fn response_stream(response: Response, model: String) -> Result<HttpResponse, String> {
+async fn response_stream(response: Response, model: String) -> Result<HttpResponse, Error> {
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream(); 
     // Create a custom conversation id

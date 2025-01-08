@@ -1,5 +1,6 @@
 use actix_web::{web, HttpResponse, Error};
 use actix_web::error::{ErrorInternalServerError, ErrorBadRequest};
+use async_trait::async_trait;
 use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::StreamExt;
@@ -8,11 +9,11 @@ use bytes::Bytes;
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::configs::settings::load_models_config;
-use crate::apis::models_api::controllers::chat_models::Completions;
+use crate::cores::chat_models::chat_controller::Completions;
 
 pub struct GLM;
 
-#[async_trait::async_trait]
+#[async_trait]
 impl Completions for GLM{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration

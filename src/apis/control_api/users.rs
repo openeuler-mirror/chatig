@@ -2,7 +2,6 @@ use actix_web::{get, delete, post, web, Error, HttpRequest, HttpResponse, Respon
 use std::collections::HashMap;
 
 use crate::apis::schemas::ErrorResponse;
-use crate::utils::AppState;
 use crate::meta::users::{insert_user_object, list_user_objects, modify_user_object, retrieve_user_object, delete_user_object, UserObjectDto};
 
 use serde::Serialize;
@@ -24,11 +23,10 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
 // create user
 #[post("/v1/organization/users")]
-async fn create_user(data: web::Data<AppState>, user: web::Json<UserObjectDto>) -> Result<impl Responder, Error> {
+async fn create_user(user: web::Json<UserObjectDto>) -> Result<impl Responder, Error> {
     // 1. create user object in the database
-    let pool = &data.db_pool;
 
-    let user = insert_user_object(pool, user.into_inner()).await
+    let user = insert_user_object(user.into_inner()).await
         .map_err(|e| {
             let error_response = ErrorResponse {
                 error: format!("Failed to create user object: {}", e),
@@ -42,7 +40,7 @@ async fn create_user(data: web::Data<AppState>, user: web::Json<UserObjectDto>) 
 
 // list users
 #[get("/v1/organization/users")]
-async fn list_users(headers: HttpRequest, data: web::Data<AppState>) -> Result<impl Responder, Error> {
+async fn list_users(headers: HttpRequest) -> Result<impl Responder, Error> {
     // 1. get parameters from query string
     let query = headers.query_string();
     let params: HashMap<String, String> = serde_urlencoded::from_str(query).unwrap_or_default();
@@ -50,8 +48,7 @@ async fn list_users(headers: HttpRequest, data: web::Data<AppState>) -> Result<i
     let limit = params.get("limit").and_then(|s| s.parse::<i64>().ok()).unwrap_or(20);
 
     // 2. list user objects from the database
-    let pool = &data.db_pool;
-    let users = list_user_objects(pool, limit, after).await
+    let users = list_user_objects(limit, after).await
         .map_err(|e| {
             let error_response = ErrorResponse {
                 error: format!("Failed to list user objects: {}", e),
@@ -66,13 +63,12 @@ async fn list_users(headers: HttpRequest, data: web::Data<AppState>) -> Result<i
 
 // modify user
 #[post("/v1/organization/users/{user_id}")]
-async fn modify_user(data: web::Data<AppState>, user_id: web::Path<String>, role: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
+async fn modify_user(user_id: web::Path<String>, role: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. modify user object in the database
-    let pool = &data.db_pool;
     let user_id = user_id.into_inner();
     let role = role.get("role").cloned().unwrap_or_default();
 
-    let user = modify_user_object(pool, user_id, role).await
+    let user = modify_user_object(user_id, role).await
         .map_err(|e| {
             let error_response = ErrorResponse {
                 error: format!("Failed to modify user object: {}", e),
@@ -87,11 +83,10 @@ async fn modify_user(data: web::Data<AppState>, user_id: web::Path<String>, role
 
 // retrieve user
 #[get("/v1/organization/users/{user_id}")]
-async fn retrieve_user(data: web::Data<AppState>, user_id: web::Path<String>) -> Result<impl Responder, Error> {
+async fn retrieve_user(user_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. retrieve user object from the database
-    let pool = &data.db_pool;
     let user_id = user_id.into_inner();
-    let user = retrieve_user_object(pool, user_id).await
+    let user = retrieve_user_object(user_id).await
         .map_err(|e| {
             let error_response = ErrorResponse {
                 error: format!("Failed to retrieve user object: {}", e),
@@ -105,11 +100,10 @@ async fn retrieve_user(data: web::Data<AppState>, user_id: web::Path<String>) ->
 
 // delete user
 #[delete("/v1/organization/users/{user_id}")]
-async fn delete_user(data: web::Data<AppState>, user_id: web::Path<String>) -> Result<impl Responder, Error> {
+async fn delete_user(user_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. delete user object from the database
-    let pool = &data.db_pool;
     let user_id = user_id.into_inner();
-    delete_user_object(pool, user_id.clone()).await
+    delete_user_object(user_id.clone()).await
         .map_err(|e| {
             let error_response = ErrorResponse {
                 error: format!("Failed to delete user object: {}", e),

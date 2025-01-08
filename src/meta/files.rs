@@ -1,7 +1,6 @@
-use bb8::Pool;
-use bb8_postgres::PostgresConnectionManager;
-use tokio_postgres::NoTls;
 use serde::{Serialize, Deserialize};
+
+use crate::meta::init::get_pool;
 
 // file_object table structure
 #[derive(Serialize, Deserialize, Debug)]
@@ -16,9 +15,9 @@ pub struct FileObject {
 
 // add file object
 pub async fn add_file_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     file_object: FileObject,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "
@@ -32,9 +31,9 @@ pub async fn add_file_object(
 
 // delete file object
 pub async fn delete_file_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     file_id: i32,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "DELETE FROM file_object WHERE id = $1";
@@ -46,9 +45,9 @@ pub async fn delete_file_object(
 
 // update file object
 pub async fn _update_file_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     file_object: FileObject,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "
@@ -70,9 +69,9 @@ pub async fn _update_file_object(
 
 // get file object
 pub async fn get_file_object_by_id(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     file_id: i32,
 ) -> Result<Option<FileObject>, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "SELECT id, object, bytes, created_at, filename, purpose FROM file_object WHERE id = $1";
@@ -95,8 +94,8 @@ pub async fn get_file_object_by_id(
 
 // list all file objects
 pub async fn list_file_objects(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
 ) -> Result<Vec<FileObject>, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "SELECT id, object, bytes, created_at, filename, purpose FROM file_object";

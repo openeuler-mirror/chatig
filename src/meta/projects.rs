@@ -1,7 +1,6 @@
-use bb8::Pool;
-use bb8_postgres::PostgresConnectionManager;
-use tokio_postgres::NoTls;
 use serde::{Serialize, Deserialize};
+
+use crate::meta::init::get_pool;
 
 // project_object table structure
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -16,11 +15,11 @@ pub struct ProjectObject {
 
 // List all project objects
 pub async fn list_project_objects(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     limit: i64, 
     after: Option<String>, 
     include_archived: bool,
 ) -> Result<Vec<ProjectObject>, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     // dynamic build query and parameters
@@ -68,9 +67,9 @@ pub async fn list_project_objects(
 
 // Create project object
 pub async fn create_project_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     project_object: ProjectObject,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "
@@ -91,9 +90,9 @@ pub async fn create_project_object(
 
 // Retrieve project object
 pub async fn retrieve_project_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     project_id: String,
 ) -> Result<ProjectObject, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "SELECT id, object, name, created_at, archived_at, status FROM project_object WHERE id = $1";
@@ -113,10 +112,10 @@ pub async fn retrieve_project_object(
 
 // Modify project object
 pub async fn modify_project_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     project_id: String,
     project_name: String,
 ) -> Result<ProjectObject, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "
@@ -127,16 +126,16 @@ pub async fn modify_project_object(
         &project_id,
     ]).await?;
 
-    let project = retrieve_project_object(pool, project_id.clone()).await?;
+    let project = retrieve_project_object(project_id.clone()).await?;
 
     Ok(project)
 }
 
 // Archive project object
 pub async fn archive_project_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     project_id: String,
 ) -> Result<ProjectObject, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let query = "UPDATE project_object SET status = 'archive', archived_at = $1 WHERE id = $2";
@@ -144,6 +143,6 @@ pub async fn archive_project_object(
     
     client.execute(query, &[&archived_at, &project_id]).await?;
 
-    let project = retrieve_project_object(pool, project_id.clone()).await?;
+    let project = retrieve_project_object(project_id.clone()).await?;
     Ok(project)
 }

@@ -1,7 +1,6 @@
-use bb8::Pool;
-use bb8_postgres::PostgresConnectionManager;
-use tokio_postgres::NoTls;
 use serde::{Serialize, Deserialize};
+
+use crate::meta::init::get_pool;
 
 // user_object table structure
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -23,7 +22,6 @@ pub struct UserObjectDto {
 
 // Insert a user object
 pub async fn insert_user_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     user: UserObjectDto,
 ) -> Result<UserObject, Box<dyn std::error::Error>> {
     let name = user.name;
@@ -32,6 +30,7 @@ pub async fn insert_user_object(
     let created_at = chrono::Utc::now().timestamp();
     let id = format!("{}_{}", name, created_at);
 
+    let pool = get_pool().await?;
     let client = pool.get().await?;
     let query = String::from(
         "INSERT INTO user_object (id, object, name, email, role, added_at) VALUES ($1, $2, $3, $4, $5, $6)"
@@ -52,10 +51,10 @@ pub async fn insert_user_object(
 
 // List all user objects
 pub async fn list_user_objects(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     limit: i64, 
     after: Option<String>, 
 ) -> Result<Vec<UserObject>, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     // dynamic build query and parameters
@@ -98,10 +97,10 @@ pub async fn list_user_objects(
 
 // Modify the user_object table
 pub async fn modify_user_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     id: String,
     role: String,
 ) -> Result<UserObject, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     // dynamic build query and parameters
@@ -112,16 +111,16 @@ pub async fn modify_user_object(
     client.execute(&query, &[&role, &id]).await?;
 
     // return the modified user object
-    let user_object = retrieve_user_object(pool, id).await?;
+    let user_object = retrieve_user_object(id).await?;
 
     Ok(user_object)
 }
 
 // Retrieve a user object
 pub async fn retrieve_user_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     id: String,
 ) -> Result<UserObject, Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let row = client.query_one("SELECT * FROM user_object WHERE id = $1", &[&id]).await?;
@@ -139,9 +138,9 @@ pub async fn retrieve_user_object(
 
 // Delete a user object
 pub async fn delete_user_object(
-    pool: &Pool<PostgresConnectionManager<NoTls>>,
     id: String,
 ) -> Result<(), Box<dyn std::error::Error>> {
+    let pool = get_pool().await?;
     let client = pool.get().await?;
 
     let _ = client.execute("DELETE FROM user_object WHERE id = $1", &[&id]).await?;

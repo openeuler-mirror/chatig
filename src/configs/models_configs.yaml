@@ -5,7 +5,7 @@ qwen_models:
     max_tokens: 32768
   
   qwen2_5_7b_instruct:
-    reqwest_url: "http://x.x.x.x:8000/v1/chat/completions"
+    reqwest_url: "http://192.168.0.132:8000/v1/chat/completions"
     model_name: "Qwen/Qwen2.5-7B-Instruct"
     max_tokens: 30000
 
