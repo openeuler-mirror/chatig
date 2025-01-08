@@ -22,9 +22,3 @@ vllm:
 mindie:
   completion: "http://x.x.x.x:1025/v1/chat/completions"
   model_name: "Qwen-7B-Chat"  # the model of mindie
-
-
-Qwen-7B-Chat:
-  url: "http://x.x.x.x:1025/v1/chat/completions"
-  max-token: "Qwen-7B-Chat"
-  

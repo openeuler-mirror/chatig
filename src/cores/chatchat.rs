@@ -20,7 +20,7 @@ use crate::meta::files::{add_file_object, FileObject};
                                       
 
 // knowledge base chat completions
-pub async fn kb_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
+pub async fn _kb_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
     // 1. Get the corresponding parameter values, if not provided in the request body, set default values
     let max_tokens = req_body.max_tokens.unwrap_or(0).clone();
     let temperature = req_body.temperature.unwrap_or(0.3).clone();
@@ -76,7 +76,7 @@ pub async fn kb_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpR
 
     if stream {
         // Handle streaming response requests
-        kb_response_stream(response).await
+        _kb_response_stream(response).await
     } else {
         // handle non-streaming response requests
         kb_response_non_stream(response).await
@@ -129,7 +129,7 @@ async fn kb_response_non_stream(response: Response) -> Result<HttpResponse, Stri
 }
 
 // Handle streaming response requests
-async fn kb_response_stream(response: Response) -> Result<HttpResponse, String> {
+async fn _kb_response_stream(response: Response) -> Result<HttpResponse, String> {
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream().skip(1); 
 
@@ -385,7 +385,7 @@ pub async fn upload_temp_docs(mut payload: Multipart, data: web::Data<AppState>)
     Ok(HttpResponse::Ok().json(res))
 }
 
-pub async fn file_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
+pub async fn _file_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, String> {
     // 1. Get the corresponding parameter values, if not provided in the request body, set default values
     let max_tokens = req_body.max_tokens.unwrap_or(0).clone();
     let temperature = req_body.temperature.unwrap_or(0.3).clone();

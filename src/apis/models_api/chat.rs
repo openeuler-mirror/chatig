@@ -1,22 +1,35 @@
 use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::error::ErrorBadRequest;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
-use crate::cores::{chatchat, copilot};
-use crate::cores::chat_completions;
-
-// Define supported models
-const SUPPORTED_MODELS: [&str; 4] = ["chatchat", "copilot", "vllm", "mindie"];
+use crate::apis::models_api::controllers::chat_models::Completions;
+use crate::cores::chat_models::qwen::Qwen;
+use crate::cores::chat_models::glm::GLM;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
-       .service(rag_chat_completions)
        .service(completions);
 }
 
 #[get("/health")]
 pub async fn health() -> impl Responder {
     "OK"
+}
+
+// define an interface layer that calls the completions method of the large model
+struct LLM {
+    model: Box<dyn Completions>,
+}
+
+impl LLM {
+    fn new(model: Box<dyn Completions>) -> Self {
+        LLM { model }
+    }
+
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
+        self.model.completions(req_body).await
+    }
 }
 
 #[post("/v1/chat/completions")]
@@ -29,80 +42,24 @@ pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<i
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    // 2. Check if the model is supported
+    // 2. Call the underlying API and return a unified data format
     let model_name = req_body.model.clone();
-    if !SUPPORTED_MODELS.contains(&model_name.as_str()) {
-        let error_response = ErrorResponse {
-            error: format!("Unsupported model: {}. Supported models are: {:?}", model_name, SUPPORTED_MODELS),
-        };
-        return Ok(HttpResponse::BadRequest().json(error_response));
-    }
-
-    // 3. Call the underlying API and return a unified data format
-    if let Some(_file_id) = &req_body.file_id {
-        let response = match model_name.as_str() {
-            "chatchat" => chatchat::file_chat(req_body).await,
-            _ => Err("Unsupported model".into()),
-        };
-            
-        match response {
-            Ok(resp) => {
-                Ok(resp)
-            }
-            Err(err) => {
-                let error_response = ErrorResponse {
-                    error: format!("Failed to get response from kb_chat: {}", err),
-                };
-                Ok(HttpResponse::InternalServerError().json(error_response))
-            }
-        }
-    } else {
-        let response = chat_completions::completions(req_body).await;
-
-        match response {
-            Ok(resp) => Ok(resp),
-            Err(err) => {
-                let error_response = ErrorResponse { error: format!("Failed to get response from chat completions: {}", err), };
-                Ok(HttpResponse::InternalServerError().json(error_response))
-            }
-        }
-    }
-}
-
-#[post("/v1/rag/completions")]
-pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
-    // 1. Validate that required fields exist in the request data
-    if req_body.model.is_empty() || req_body.messages.is_empty() {
-        let error_response = ErrorResponse {
-            error: "Invalid request: model or messages cannot be empty.".into(),
-        };
-        return Ok(HttpResponse::BadRequest().json(error_response));
-    }
-
-    // 2. Check if the model is supported
-    let model_name = req_body.model.clone();
-    if !SUPPORTED_MODELS.contains(&model_name.as_str()) {
-        let error_response = ErrorResponse {
-            error: format!("Unsupported model: {}. Supported models are: {:?}", model_name, SUPPORTED_MODELS),
-        };
-        return Ok(HttpResponse::BadRequest().json(error_response));
-    }
-
-    // 3. Call the underlying API and return a unified data format
-    let response = match model_name.as_str() {
-        "chatchat" => chatchat::kb_chat(req_body).await,
-        "copilot" => copilot::get_answer(req_body).await,
-        _ => Err("Unsupported model".into()),
+    let model_series = model_name.split("/").next().unwrap_or("");
+    let model: LLM = match model_series {
+        "Qwen" => LLM::new(Box::new(Qwen {})),
+        "GLM" => LLM::new(Box::new(GLM {})),
+        _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", model_series))),
     };
-        
-    // 3. Construct the response body based on the API's return result
+
+    // 3. Send the request to the model service
+    let response = model.completions(req_body).await;
     match response {
-        Ok(resp) => {
-            Ok(resp)
-        }
+        Ok(resp) => Ok(resp),
         Err(err) => {
-            let error_response = ErrorResponse { error: format!("Failed to get response from kb_chat: {}", err), };
+            let error_response = ErrorResponse {
+                error: format!("Failed to get response from {} chat completions: {}", model_name, err),
+            };
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
-    }
+    }  
 }
