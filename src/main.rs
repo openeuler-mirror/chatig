@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer, web};
+use actix_web::{App, HttpServer};
 use actix_cors::Cors;
 use std::rc::Rc;
 
@@ -11,7 +11,6 @@ mod utils;
 mod schema;
 
 use crate::configs::settings::GLOBAL_CONFIG;
-use crate::utils::AppState;
 use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
@@ -25,10 +24,9 @@ async fn main() -> std::io::Result<()> {
     let config = &*GLOBAL_CONFIG;
 
     let db_pool = setup_database().await
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
     meta::connection::setup_database().await
-    .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e))).unwrap();
-    let app_state = web::Data::new(AppState { config: config.clone(), db_pool: db_pool.clone() });
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e))).unwrap();
 
     generate_and_save_invitation_codes(&db_pool).await.map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
 
@@ -47,11 +45,10 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
-            .app_data(app_state.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
             .configure(apis::control_api::models::configure)
-            .configure(apis::funcs_api::files::configure)
+            .configure(apis::control_api::files::configure)
             .configure(apis::control_api::projects::configure)
             .configure(apis::control_api::invitation_code::configure)
             .configure(apis::control_api::users::configure)

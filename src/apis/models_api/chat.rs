@@ -3,7 +3,8 @@ use actix_web::error::ErrorBadRequest;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
-use crate::apis::models_api::controllers::chat_models::Completions;
+
+use crate::cores::chat_models::chat_controller::Completions;
 use crate::cores::chat_models::qwen::Qwen;
 use crate::cores::chat_models::glm::GLM;
 

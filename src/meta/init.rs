@@ -8,8 +8,21 @@ use crate::apis::control_api::schemas::Model;
 use chrono::Utc;
 
 pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, Box<dyn error::Error>> {
-    dotenv::dotenv().ok();
+    // Get a connection pool
+    let pool = get_pool().await?;
+    let pool_clone = pool.clone();
+    let client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
 
+    // Initialize the database (note that we pass a client from the pool for initialization)
+    create_file_object_table(&client).await?;
+    create_invitation_code_table(&client).await?;
+    create_project_object_table(&client).await?;
+    create_user_object_table(&client).await?;
+
+    Ok(pool) 
+}
+
+pub async fn get_pool() -> Result<Pool<PostgresConnectionManager<NoTls>>, Box<dyn error::Error>> {
     // Read the database URL from the environment variables if it exists, otherwise use the provided database_url
     let config = &*GLOBAL_CONFIG;
     println!("Using database URL: {}", config.database);
@@ -20,17 +33,7 @@ pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, 
     // Create a connection pool
     let pool = Pool::builder().build(manager).await?;
 
-    // Initialize the database (note that we pass a client from the pool for initialization)
-    let pool_clone = pool.clone();
-    let mut client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
-    create_file_object_table(&client).await?;
-    create_invitation_code_table(&client).await?;
-    create_project_object_table(&client).await?;
-    create_user_object_table(&client).await?;
-    create_models_table(&client).await?;
-    init_models_table(&mut client).await?;
-
-    Ok(pool) 
+    Ok(pool)
 }
 
 // Create the file_object table
