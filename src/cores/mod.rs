@@ -3,4 +3,4 @@ pub mod chat_models;
 pub mod rag_apps;
 pub mod files_apps;
 pub mod models;
-pub mod embeddings;
+pub mod embedding_models;
