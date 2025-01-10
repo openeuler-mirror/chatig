@@ -47,6 +47,8 @@ async fn main() -> std::io::Result<()> {
             .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
+            .configure(apis::funcs_api::file_chat::configure)
+            .configure(apis::funcs_api::rag::configure)
             .configure(apis::control_api::models::configure)
             .configure(apis::control_api::files::configure)
             .configure(apis::control_api::projects::configure)

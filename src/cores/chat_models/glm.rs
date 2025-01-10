@@ -49,10 +49,11 @@ impl Completions for GLM{
         // 4. Return the response based on the request's streaming status
         if stream {
             // Handle streaming response requests
-            let body_stream = response.bytes_stream();
-            Ok(HttpResponse::Ok()
-            .content_type("text/event-stream")
-            .streaming(body_stream))
+            // let body_stream = response.bytes_stream();
+            // Ok(HttpResponse::Ok()
+            // .content_type("text/event-stream")
+            // .streaming(body_stream))
+            completions_response_stream(response).await
         } else {
             // handle non-streaming response requests
             completions_response_non_stream(response).await
