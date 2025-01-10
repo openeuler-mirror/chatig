@@ -5,11 +5,14 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::StreamExt;
 use bytes::Bytes;
+use chrono::Utc;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::configs::settings::load_models_config;
 use crate::cores::chat_models::chat_controller::Completions;
+use crate::utils::kafka::{send_to_kafka, Kafka, FieldsInfo, TagsInfo};
+use crate::GLOBAL_CONFIG;
 
 
 pub struct Qwen;
@@ -22,19 +25,39 @@ impl Completions for Qwen{
         
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true).clone();
-        let request_body = json!({
-            "model": &model_name,
-            "temperature": req_body.temperature.unwrap_or(0.3).clone(),
-            "n": req_body.n.unwrap_or(1).clone(),
-            "stream": stream,
-            "stop": null,
-            "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
-            "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
-            "logit_bias": null,
-            "user": req_body.user.clone(),
-            "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
-            "messages": req_body.messages
-        });
+        let request_body: Value;
+        if stream {
+            request_body = json!({
+                "model": model_name,
+                "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+                "n": req_body.n.unwrap_or(1).clone(),
+                "stream": stream,
+                "stop": null,
+                "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
+                "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
+                "logit_bias": null,
+                "user": req_body.user.clone(),
+                "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
+                "messages": req_body.messages,
+                "stream_options": {
+                    "include_usage": "True"
+                }
+            });
+        } else {
+            request_body = json!({
+                "model": model_name,
+                "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+                "n": req_body.n.unwrap_or(1).clone(),
+                "stream": stream,
+                "stop": null,
+                "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
+                "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
+                "logit_bias": null,
+                "user": req_body.user.clone(),
+                "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
+                "messages": req_body.messages,
+            });
+        }
 
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
@@ -90,6 +113,8 @@ fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
 
 // Handle non-streaming response requests
 async fn completions_response_non_stream(response: Response) -> Result<HttpResponse, Error> {
+    let config = &*GLOBAL_CONFIG;
+
     // 1. Parse the JSON response body into the KbChatResponse struct
     let response_text = response.text().await
         .map_err(|err| ErrorInternalServerError(format!("Failed to read response: {}", err)))?;
@@ -130,12 +155,44 @@ async fn completions_response_non_stream(response: Response) -> Result<HttpRespo
       }
   });
 
-  Ok(HttpResponse::Ok().json(res))
+    if config.enabled {
+        let timestamp = Utc::now().timestamp();
+        let kafka = Kafka {
+            timestamp: timestamp,
+            fields: FieldsInfo {
+                completion_tokens: chat_response.usage.prompt_tokens.to_string(),
+                prompt_tokens: chat_response.usage.completion_tokens.to_string(),
+                total_tokens: chat_response.usage.total_tokens.to_string(),
+            },
+            tags: TagsInfo {
+                user_name: "example_user".to_string(),
+                model_name: chat_response.model.to_string(),
+            },
+        };
+        let kafka_json = serde_json::to_string(&kafka).unwrap();
+
+        let result = send_to_kafka(&kafka_json).await;
+        match result {
+            Ok(()) => {
+                Ok(HttpResponse::Ok().json(res))
+            },
+            Err(e) => {
+                Ok(HttpResponse::InternalServerError().json(json!({
+                    "error": "Failed to send message to Kafka",
+                    "details": format!("{:?}", e)
+                })))
+            }
+        }
+    } else {
+        Ok(HttpResponse::Ok().json(res))
+    }
 }
 
 
 // Handle streaming response requests
 async fn completions_response_stream(response: Response) -> Result<HttpResponse, Error> {
+    let config = &*GLOBAL_CONFIG;
+
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream();
 
@@ -219,9 +276,42 @@ async fn completions_response_stream(response: Response) -> Result<HttpResponse,
                         }
                     };
 
-                    // Create a custom response body
-                    if chat_response.choices[0].finish_reason == Some("stop".to_string()){
-                        break;
+                    // If usage is exist
+                    match &chat_response.usage {
+                        Some(usage) => {
+                            if config.enabled{
+                                let timestamp = Utc::now().timestamp();
+                                let kafka = Kafka {
+                                    timestamp: timestamp,
+                                    fields: FieldsInfo {
+                                        completion_tokens: usage.prompt_tokens.to_string(),
+                                        prompt_tokens: usage.completion_tokens.to_string(),
+                                        total_tokens: usage.total_tokens.to_string(),
+                                    },
+                                    tags: TagsInfo {
+                                        user_name: "example_user".to_string(),
+                                        model_name: chat_response.model.to_string(),
+                                    },
+                                };
+                                let kafka_json = serde_json::to_string(&kafka).unwrap();
+                                let result = send_to_kafka(&kafka_json).await;
+                                match result {
+                                    Ok(()) => {
+                                        break
+                                    },
+                                    Err(e) => {
+                                        yield Err(format!("Failed to send message to Kafka: {:?}", e));
+                                        // println!("Failed to send message: {:?}", e),
+                                    }
+                                }
+                            }
+                            break;
+                        },
+                        None => {
+                            if chat_response.choices[0].finish_reason == Some("stop".to_string()){
+                                continue;
+                            }
+                        },
                     }
 
                     let res = json!({
