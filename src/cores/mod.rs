@@ -1,5 +1,6 @@
-pub mod chat_models;
-pub mod chatchat;
-pub mod copilot;
 pub mod schemas;
+pub mod chat_models;
+pub mod rag_apps;
+pub mod files_apps;
 pub mod models;
+pub mod embeddings;

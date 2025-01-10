@@ -22,3 +22,12 @@ vllm:
 mindie:
   completion: "http://x.x.x.x:1025/v1/chat/completions"
   model_name: "Qwen-7B-Chat"  # the model of mindie
+
+embeddings:
+  get_embedding: "http://x.x.x.x:30007/v1/embeddings"
+  model_name: "bge-large-zh-v1.5"
+
+Qwen-7B-Chat:
+  url: "http://x.x.x.x:1025/v1/chat/completions"
+  max-token: "Qwen-7B-Chat"
+  

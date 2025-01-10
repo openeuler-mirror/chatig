@@ -11,9 +11,9 @@ use serde_yaml::to_string;
 use chrono::Utc;
 use tokio_postgres::Client;
 
+use crate::meta::init::get_pool;
 
 // use crate::servers::api_schemas::{AppState, InvitationCodeRequest, InvitationCodeResponse};
-use crate::utils::AppState;
 use crate::apis::control_api::schemas::{InvitationCodeRequest, InvitationCodeResponse};
 
 
@@ -160,11 +160,10 @@ pub async fn generate_sk_code(client: &Client) -> Result<String, Error> {
 
 // Get all invitation codes
 #[get("invitation")]
-pub async fn get_all_invitation_codes(
-    data: web::Data<AppState>,
-) -> Result<impl Responder, Error> {
+pub async fn get_all_invitation_codes() -> Result<impl Responder, Error> {
     // Get a connection from the database connection pool.
-    let client = match data.db_pool.get().await {
+    let pool = get_pool().await?;
+    let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
             return Err(ErrorInternalServerError(format!("Failed to get database connection: {}", err)));
@@ -221,10 +220,10 @@ pub async fn get_all_invitation_codes(
 #[get("invitation/user")]
 pub async fn get_invitation_codes_by_user(
     req_body: web::Json<InvitationCodeRequest>, 
-    data: web::Data<AppState>
 ) -> Result<impl Responder, Error> {
 
-    let client = match data.db_pool.get().await {
+    let pool = get_pool().await?;
+    let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
             return Err(ErrorInternalServerError(format!("Failed to get database connection: {}", err)));
@@ -281,13 +280,13 @@ pub async fn get_invitation_codes_by_user(
 #[delete("invitation/{id}")]
 pub async fn delete_invitation_code_by_id(
     path: web::Path<i32>, // Get the id through the path parameter. Here the type is modified to i32, corresponding to the id field type in the database.
-    data: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
     
     let id = path.into_inner();
 
     // Get a connection from the database connection pool.
-    let client = match data.db_pool.get().await {
+    let pool = get_pool().await?;
+    let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
             return Err(ErrorInternalServerError(format!("Failed to get database connection: {}", err)));
@@ -317,12 +316,10 @@ pub async fn delete_invitation_code_by_id(
 #[post("invitation")]
 pub async fn allocate_invitation_code_to_user(
     req_body: web::Json<InvitationCodeRequest>, 
-    data: web::Data<AppState>
 ) -> Result<impl Responder, Error> {
         
     // Save the invitation code to PostgreSQL.
-    let pool = &data.db_pool;
-
+    let pool = get_pool().await?;
     let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
@@ -398,12 +395,11 @@ struct ChangeSizeRequest {
 #[post("chatig")]
 pub async fn change_invitation_code_database_size(
     req_body: web::Json<ChangeSizeRequest>,
-    data: web::Data<AppState>,
 ) -> Result<impl Responder, Error> {
 
     let target_size = req_body.target_size;
 
-    let pool = &data.db_pool;
+    let pool = get_pool().await?;
     let client = match pool.get().await {
         Ok(client) => client,
         Err(err) => {
