@@ -1,148 +1,117 @@
 use actix_web::{web, HttpResponse, Error};
 use actix_web::error::ErrorInternalServerError;
 use async_trait::async_trait;
-// use actix_multipart::Multipart;
+use actix_multipart::form::MultipartForm;
 use bytes::Bytes;
 use reqwest::{Client, Response, multipart};
 use serde_json::{Value, json};
-use futures::stream::{StreamExt, TryStreamExt};    // For try_future and try_next
+use futures::stream::StreamExt;    // For try_future and try_next
 
-// use std::fs::File;
-// use std::io::Write;
-// use std::path::Path;
+use std::fs;
+use std::path::Path;
 
 use crate::apis::models_api::schemas::{ChatCompletionRequest, Message};
-
 use crate::cores::schemas::{OpenAIStreamResponse, UploadTempDocsResponse, 
     FileChatResponse, FileStreamChatResponse, FileDocStreamChatResponse, OpenAIDeltaMessage, OpenAIStreamChoice};
-
-// use crate::configs::settings::GLOBAL_CONFIG;
-use crate::configs::settings::load_server_config;
-// use crate::meta::init::get_pool;
-// use crate::meta::files::{add_file_object, FileObject};
-
 use crate::cores::files_apps::file_controller::FileChatController;
+use crate::cores::files_apps::file_controller::UploadForm;
+
+use crate::configs::settings::GLOBAL_CONFIG;
+use crate::configs::settings::load_server_config;
+use crate::meta::files::{add_file_object, FileObject};
+
 
 pub struct ChatChatFile;
 
 #[async_trait]
 impl FileChatController for ChatChatFile {
-    // async fn upload_temp_docs(&self, mut payload: Multipart) -> Result<HttpResponse, Error> {
-    //     let config = &*GLOBAL_CONFIG;
-    //     let mut purpose: Option<String> = None;
-    //     let mut filename: Option<String> = None;
-    //     let mut total_file_content: Vec<u8> = Vec::new();
-    //     let mut total_file_size: usize = 0;
+    // Upload temporary documents
+    async fn upload_temp_docs(&self, MultipartForm(form): MultipartForm<UploadForm>) -> Result<HttpResponse, Error> {
+        let config = &*GLOBAL_CONFIG;
+
+        // save uploaded files
+        let purpose = form.json.purpose.clone();
+        let upload_dir = Path::new(&config.temp_docs_path);
+        if !upload_dir.exists() {
+            fs::create_dir_all(upload_dir)
+                .map_err(|err| ErrorInternalServerError(format!("Failed to create directory: {} : {:?}", err, upload_dir)))?;
+        }
+
+        // create multipart/form-data
+        let mut req_form = multipart::Form::new()
+            .text("prev_id", "")
+            .text("chunk_size", "750")
+            .text("chunk_overlap", "150")
+            .text("zh_title_enhance", "false");
+
+        let mut total_file_size: u64 = 0;
+        let mut file_name = String::new();
+        for file in form.files {
+            let part = multipart::Part::stream(fs::read(&file.file.path())?)
+                .file_name(file.file_name.clone().unwrap_or_else(|| "unnamed".to_string()));
+            req_form = req_form.part("files", part);
+            
+            // 
+            total_file_size += file.size as u64;
     
-    //     // Create multipart/form-data
-    //     while let Ok(Some(mut field)) = payload.try_next().await {
-    //         match field.name() {
-    //             "purpose" => {
-    //                 // Read the purpose string
-    //                 let purpose_str = field.next().await.unwrap_or_else(|| Ok(Bytes::new())).unwrap_or_else(|_| Bytes::new());
-    //                 let purpose_str = String::from_utf8_lossy(&purpose_str).to_string();
-    //                 purpose = Some(purpose_str);
-    //             }
-    //             "file" => {
-    //                 // Read file content
-    //                 let mut file_size: usize = 0;
-    //                 let mut file_content: Vec<u8> = Vec::new();
-    //                 while let Some(chunk) = field.next().await {
-    //                     let data = chunk.map_err(|err| ErrorInternalServerError(format!("{}", err)))?;
-    //                     file_size += data.len();
-    //                     file_content.extend_from_slice(&data);
-    //                 }
-    //                 total_file_size += file_size;
-    //                 total_file_content.extend_from_slice(&file_content);
-    
-    //                 // Generate filename
-    //                 filename = field.content_disposition().get_filename().map(|name| name.to_string()).or(Some("uploaded_file".to_string()));
-    
-    //                 // Check if the save directory exists, if not, create it
-    //                 let dir_path = Path::new(&config.temp_docs_path);
-    //                 if !dir_path.exists() {
-    //                     std::fs::create_dir_all(dir_path)
-    //                         .map_err(|err| ErrorInternalServerError(format!("Failed to create directory: {} : {:?}", err, dir_path)))?;
-    //                 }
-    //                 // Generate the file path
-    //                 let file_path = dir_path.join(filename.clone().unwrap_or_else(|| "uploaded_file".to_string()));
-    //                 let mut file = File::create(file_path.clone())
-    //                     .map_err(|err| ErrorInternalServerError(format!("Failed to create file: {} : {:?}", err, file_path)))?;
-    //                 file.write_all(&file_content).map_err(|err| ErrorInternalServerError(format!("Failed to write to file: {}", err)))?;
-    
-    //                 // save file to pgsql
-    //                 // let pool = get_pool().await?;
-    //                 let file_object = FileObject {
-    //                     object: file_path.to_str().unwrap().to_string(),
-    //                     bytes: file_size as i32,
-    //                     created_at: chrono::Utc::now().timestamp() as i64,
-    //                     filename: filename.clone().unwrap_or_else(|| "uploaded_file".to_string()),
-    //                     purpose: purpose.clone().unwrap_or_else(|| "file_chat".to_string()),
-    //                     id: 0,
-    //                 // };
-    //                 // add_file_object(file_object).await
-    //                 //     .map_err(|err| ErrorInternalServerError(format!("Failed to add file object: {}", err)))?;
-    
-    //                 // Print the successful storage file and file directory in the terminal
-    //                 // println!("File saved successfully at: {:?}", file_path);
-    //             }
-    //             _ => (),
-    //         }
-    //     }
-    
-    //     // create multipart/form-data
-    //     let form = multipart::Form::new()
-    //         .part("files", 
-    //                 multipart::Part::bytes(total_file_content.clone())
-    //                 .file_name(filename.clone()
-    //                 .unwrap_or_else(|| "uploaded_file".to_string())))    // Use the filename from the upload request
-    //         .text("prev_id", "")
-    //         .text("chunk_size", "750")
-    //         .text("chunk_overlap", "150")
-    //         .text("zh_title_enhance", "false");
-    
-    //     let client = Client::new();
-    //     let server_config = load_server_config()
-    //         .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
+            // move the temporary file to the target directory
+            file_name = file.file_name.clone().unwrap_or_else(|| "unnamed".to_string());
+            let file_path = upload_dir.join(&file_name);
+            fs::rename(&file.file.path(), &file_path)?;
+            
+            // save file to pgsql
+            let file_object = FileObject {
+                object: file_path.to_str().unwrap().to_string(),
+                bytes: file.size as i32,
+                created_at: chrono::Utc::now().timestamp() as i64,
+                filename: file_name.clone(),
+                purpose: purpose.clone(),
+                id: 0,
+            };
+            add_file_object(file_object).await
+                .map_err(|err| ErrorInternalServerError(format!("Failed to add file object: {}", err)))?;
+        }
         
-    //     let response = client.post(&server_config.chatchat.upload_temp_docs)
-    //         .multipart(form)
-    //         .send()
-    //         .await
-    //         .map_err(|err| ErrorInternalServerError(format!("upload_temp_docs request failed: {}", err)))?;
+        let client = Client::new();
+        let server_config = load_server_config()
+            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
+        
+        let response = client.post(&server_config.chatchat.upload_temp_docs)
+            .multipart(req_form)
+            .send()
+            .await
+            .map_err(|err| ErrorInternalServerError(format!("upload_temp_docs request failed: {}", err)))?;
     
-    //     // Convert the response to JSON UploadTempDocsResponse
-    //     let response_text = response.text().await
-    //         .map_err(|err| ErrorInternalServerError(format!("Failed to read response text: {}", err)))?;
-    //     let res_json: UploadTempDocsResponse = serde_json::from_str(&response_text)
-    //         .map_err(|err| ErrorInternalServerError(format!("Failed to parse response as JSON: {}", err)))?;
+        // Convert the response to JSON UploadTempDocsResponse
+        let response_text = response.text().await
+            .map_err(|err| ErrorInternalServerError(format!("Failed to read response text: {}", err)))?;
+        let res_json: UploadTempDocsResponse = serde_json::from_str(&response_text)
+            .map_err(|err| ErrorInternalServerError(format!("Failed to parse response as JSON: {}", err)))?;
     
-    //     // Check if there are failed files
-    //     if !res_json.data.failed_files.is_empty() {
-    //         let failed_files = res_json.data.failed_files;
-    //         let mut error_message = String::new();
-    //         for failed_file in failed_files {
-    //             for (_key, value) in failed_file.details.iter() {
-    //                 error_message.push_str(&format!("{}\n", value));
-    //             }
-    //         }
-    //         return Err(ErrorInternalServerError(error_message));
-    //     }
+        // Check if there are failed files
+        if !res_json.data.failed_files.is_empty() {
+            let failed_files = res_json.data.failed_files;
+            let mut error_message = String::new();
+            for failed_file in failed_files {
+                for (_key, value) in failed_file.details.iter() {
+                    error_message.push_str(&format!("{}\n", value));
+                }
+            }
+            return Err(ErrorInternalServerError(error_message));
+        }
     
-    //     // create response
-    //     let res = json!({
-    //         "id": res_json.data.id,
-    //         "object": "file",
-    //         "bytes": total_file_size,
-    //         "created_at": chrono::Utc::now().timestamp() as u64,
-    //         "filename": filename,
-    //         "purpose": purpose,
-    //     });
+        // create response
+        let res = json!({
+            "id": res_json.data.id,
+            "object": "file",
+            "bytes": total_file_size,
+            "created_at": chrono::Utc::now().timestamp() as u64,
+            "filename": file_name,
+            "purpose": purpose,
+        });
     
-    //     Ok(HttpResponse::Ok().json("res"))
-    // }
-
-
+        Ok(HttpResponse::Ok().json(res))
+    }
 
     // Upload temporary documents
     async fn file_chat_completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {

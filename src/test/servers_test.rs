@@ -20,7 +20,7 @@ pub mod tests {
     async fn test_v1_embeddings() {
         let mut app = test::init_service(
             App::new().service(
-                crate::apis::models_api::embeddings::embeddings
+                crate::apis::models_api::embeddings::v1_embeddings
             )
         ).await;
 
