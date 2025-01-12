@@ -15,3 +15,11 @@ database: "postgres://chatig:chatig@localhost/chatig"
 connection_num: 10
 # pgsql/mysql
 database_type: "pgsql"
+
+# kafaka
+enabled: false
+brokers: "x.x.x.x:9092"
+topic: "ai_chatig_tokens"
+
+# log level
+log_level: info

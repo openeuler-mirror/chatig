@@ -14,6 +14,7 @@ use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
+use crate::utils::{log::init_logger, kafka::start_kafka_sender};
 
 #[cfg(test)]
 mod test;
@@ -22,6 +23,12 @@ mod test;
 async fn main() -> std::io::Result<()> {
     // Set up the AppState struct
     let config = &*GLOBAL_CONFIG;
+
+    // Init log
+    init_logger(&config.log_level, "chatig");
+
+    // Start kafka push messages
+    tokio::spawn(start_kafka_sender());
 
     let db_pool = setup_database().await
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;

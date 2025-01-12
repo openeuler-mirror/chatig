@@ -127,6 +127,10 @@ pub struct Config {
     pub database: String,
     pub connection_num: u32,
     pub database_type: String,
+    pub enabled: bool,
+    pub brokers: String,
+    pub topic: String,
+    pub log_level: String
 }
 
 impl Config {
