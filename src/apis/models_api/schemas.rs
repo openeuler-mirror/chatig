@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 
 // ------------------------------------------ Completion API ------------------------------------------ 
-#[derive(Deserialize, Serialize, Clone)]
+#[derive(Deserialize, Serialize, Clone, ToSchema)]
 pub struct Message {
     pub role: String,
     pub content: String,
 }
 
 // Define the API format accepted by the interface
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct ChatCompletionRequest {
     pub model: String,                      // (Required) Name of the model used
     pub messages: Vec<Message>,             // (Required) List of messages, each message must contain `role` and `content`.
@@ -37,7 +38,7 @@ pub struct ChatCompletionRequest {
     pub file_id: Option<String>,            // File ID to identify the file.
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: Option<u32>,
@@ -69,7 +70,7 @@ pub struct ChatCompletionResponse {
 }
 
 // Define the request struct, corresponding to the request parameters of the /v1/embeddings interface.
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct EmbeddingRequest {
     pub input: Vec<String>,
     pub model: String,
@@ -82,7 +83,7 @@ pub struct EmbeddingRequest {
 }
 
 // Define the response struct, corresponding to the response data format of the /v1/embeddings interface.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct EmbeddingResponse {
     pub object: String,
     pub data: Vec<EmbeddingData>,
@@ -91,7 +92,7 @@ pub struct EmbeddingResponse {
 }
 
 // Embedding data struct, which is part of the EmbeddingResponse.
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, ToSchema)]
 pub struct EmbeddingData {
     pub object: String,
     pub embedding: Vec<f32>,
