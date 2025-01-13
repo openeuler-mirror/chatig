@@ -13,6 +13,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
        .service(completions);
 }
 
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/health",  // 路径
+    responses((status = 200, body = String))  // 响应内容
+)]
+
 #[get("/health")]
 pub async fn health() -> impl Responder {
     "OK"
@@ -32,6 +38,17 @@ impl LLM {
         self.model.completions(req_body).await
     }
 }
+
+#[utoipa::path(
+    post,  // 请求方法
+    path = "/v1/chat/completions",  // 路径
+    request_body = ChatCompletionRequest,
+    responses(
+        (status = 200, body = String), //还没有写完
+        (status = 400, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
 
 #[post("/v1/chat/completions")]
 pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {

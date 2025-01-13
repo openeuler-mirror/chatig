@@ -1,6 +1,8 @@
 use actix_web::{App, HttpServer};
 use actix_cors::Cors;
 use std::rc::Rc;
+use utoipa::OpenApi;
+use utoipa_swagger_ui::SwaggerUi;
 
 mod apis;
 mod cores;
@@ -15,6 +17,7 @@ use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
 use crate::utils::{log::init_logger, kafka::start_kafka_sender};
+use crate::apis::api_doc::ApiDoc;
 
 #[cfg(test)]
 mod test;
@@ -61,6 +64,7 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::projects::configure)
             .configure(apis::control_api::invitation_code::configure)
             .configure(apis::control_api::users::configure)
+            .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
     .bind(("0.0.0.0", port))?
     .run()
