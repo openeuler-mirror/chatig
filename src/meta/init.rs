@@ -11,13 +11,15 @@ pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, 
     // Get a connection pool
     let pool = get_pool().await?;
     let pool_clone = pool.clone();
-    let client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
+    let mut client: PooledConnection<'_, PostgresConnectionManager<NoTls>> = pool_clone.get().await?;
 
     // Initialize the database (note that we pass a client from the pool for initialization)
     create_file_object_table(&client).await?;
     create_invitation_code_table(&client).await?;
     create_project_object_table(&client).await?;
     create_user_object_table(&client).await?;
+    create_models_table(&client).await?;
+    init_models_table(&mut client).await?;
 
     Ok(pool) 
 }
