@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use sqlx::FromRow;
 use utoipa::ToSchema;
 
 // ------------------------------------------ Models API ------------------------------------------
@@ -11,7 +12,7 @@ From https://platform.openai.com/docs/api-reference/models/object
   "owned_by": "openai"
 }
 */
-#[derive(Serialize, Deserialize, Debug, Clone, ToSchema)]
+#[derive(Serialize, Deserialize, Debug, Clone, FromRow, ToSchema)]
 pub struct Model {
     pub id: String,
     pub object: String,
