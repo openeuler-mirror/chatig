@@ -6,6 +6,10 @@ use std::collections::VecDeque;
 use std::sync::Arc;
 use std::sync::OnceLock;
 use tokio::sync::Mutex; 
+use serde_json::Value;
+use chrono::Utc;
+use serde_json::json;
+use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 
 use crate::GLOBAL_CONFIG;
 
@@ -19,9 +23,9 @@ pub struct Kafka {
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct FieldsInfo {
-    pub completion_tokens: String,
-    pub prompt_tokens: String,
-    pub total_tokens: String
+    pub completion_tokens: u32,
+    pub prompt_tokens: u32,
+    pub total_tokens: u32
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -32,6 +36,7 @@ pub struct TagsInfo {
 
 static MESSAGE_QUEUE: OnceLock<Arc<Mutex<VecDeque<String>>>> = OnceLock::new();
 
+// Start to send message to kafka server, can add error log to show error. 
 pub async fn start_kafka_sender() {
     let config = &*GLOBAL_CONFIG;
     let brokers = &config.brokers;
@@ -73,6 +78,64 @@ pub async fn start_kafka_sender() {
                 Ok(Err(_)) => eprintln!("Message delivery canceled"),
                 Err(_) => eprintln!("Message delivery timed out"),
             }
+        }
+    }
+}
+
+// Save messages for sending to kafka
+pub async fn send_kafka_message_non_stream(chat_response: &CompletionsResponse, res: Value) -> Result<Value, Box<dyn std::error::Error>> {
+    let timestamp = Utc::now().timestamp();
+    let kafka = Kafka {
+        timestamp: timestamp,
+        fields: FieldsInfo {
+            completion_tokens: chat_response.usage.prompt_tokens,
+            prompt_tokens: chat_response.usage.completion_tokens,
+            total_tokens: chat_response.usage.total_tokens,
+        },
+        tags: TagsInfo {
+            user_name: "example_user".to_string(),
+            model_name: chat_response.model.to_string(),
+        },
+    };
+    let kafka_json = serde_json::to_string(&kafka).unwrap();
+
+    let result = send_to_kafka(&kafka_json).await;
+    match result {
+        Ok(()) => {
+            Ok(res)
+        },
+        Err(e) => {
+            Ok(json!({
+                "error": "Failed to send message to Kafka queue",
+                "details": format!("{:?}", e)
+            }))
+        }
+    }
+}
+
+pub async fn send_kafka_message_stream(chat_response: &CompletionsStreamResponse) -> Result<(), String> {
+    let timestamp = Utc::now().timestamp();
+    let kafka = Kafka {
+        timestamp: timestamp,
+        fields: FieldsInfo {
+            completion_tokens: chat_response.usage.as_ref().unwrap().prompt_tokens,
+            prompt_tokens: chat_response.usage.as_ref().unwrap().completion_tokens,
+            total_tokens: chat_response.usage.as_ref().unwrap().total_tokens,
+        },
+        tags: TagsInfo {
+            user_name: "example_user".to_string(),
+            model_name: chat_response.model.to_string(),
+        },
+    };
+    let kafka_json = serde_json::to_string(&kafka).unwrap();
+
+    let result = send_to_kafka(&kafka_json).await;
+    match result {
+        Ok(()) => {
+            Ok(())
+        },
+        Err(e) => {
+            Err(format!("Failed to send message to Kafka: {:?}", e))
         }
     }
 }
