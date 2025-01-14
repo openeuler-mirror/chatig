@@ -1,4 +1,5 @@
 use actix_web::{delete, get, web, Error, HttpResponse, Responder};
+use utoipa::ToSchema;
 
 // use crate::models::chatchat::upload_temp_docs;
 use crate::apis::schemas::ErrorResponse;
@@ -13,12 +14,22 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(get_file_content);
 }
 
-#[derive(Serialize)]
-struct DeleteFileResponse {
+#[derive(Serialize,ToSchema)]
+pub struct DeleteFileResponse {
     id: String,
     object: String,
     deleted: bool,
 }
+
+#[utoipa::path(
+    delete,  // 请求方法
+    path = "/v1/files/{file_id}",  // 路径
+    responses(
+        (status = 200, body = DeleteFileResponse),
+        (status = 404, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
 
 // delete https://***/v1/files/{file_id}
 #[delete("v1/files/{file_id}")]
@@ -56,6 +67,15 @@ async fn delete_file(
     }))
 }
 
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/v1/files",  // 路径
+    responses(
+        (status = 200, body = Vec<FileObject>),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
+
 // get https://***/v1/files
 #[get("v1/files")]
 async fn list_file() -> Result<impl Responder, Error> {
@@ -68,6 +88,16 @@ async fn list_file() -> Result<impl Responder, Error> {
 
     Ok(HttpResponse::Ok().json(file_objects))
 }
+
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/v1/files/{file_id}",  // 路径
+    responses(
+        (status = 200, body = Vec<FileObject>),
+        (status = 404, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
 
 // get https://***/v1/files/{file_id}
 #[get("v1/files/{file_id}")]
@@ -92,6 +122,16 @@ async fn get_file(
         }
     }
 }
+
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/v1/files/{file_id}/content",  // 路径
+    responses(
+        (status = 200, body = Vec<u8>),
+        (status = 404, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
 
 // get https://***/v1/files/{file_id}/content
 #[get("v1/files/{file_id}/content")]
