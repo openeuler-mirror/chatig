@@ -13,6 +13,13 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
        .service(completions);
 }
 
+///获取健康检查
+/// 
+/// # 健康检查
+/// ```rust
+/// get /health
+/// 如果接口没有问题，则返回"OK"
+/// ```
 #[utoipa::path(
     get,  // 请求方法
     path = "/health",  // 路径

@@ -525,6 +525,84 @@ curl -X GET http://10.192.128.28:30690/plugin\
 # 没有curl通
 ```
 
+## 四、基于utoipa实现swagger可视化
+
+#### 1.进行\#[utoipa::path]宏定义
+
+使用 `#[utoipa::path]` 宏来注释API ，需要在其中写明请求方法、path、request_body和responses，tag可写可不写，具体结构样例如下：
+
+```rust
+#[utoipa::path(
+    post,  // 请求方法
+    path = "/v1/embeddings",  // 路径
+    request_body = EmbeddingRequest,  //请求体
+    responses(
+        (status = 200, body = EmbeddingResponse),
+        (status = 400, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    ),  // 响应内容
+    tag = "embeddings"
+)]
+
+// Handle the POST request for /v1/embeddings.
+#[post("/v1/embeddings")]
+async fn v1_embeddings(req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
+	...
+}
+```
+
+#### 2.对结构体使用 #[derive(ToSchema)]宏
+
+第一步中request_body和responses中所用到的结构体utoipa并不会自动识别，需要对所用到的结构体使用 `#[derive(ToSchema)]` 宏，为其生成 OpenAPI schema，具体方法样例如下：
+
+```rust
+use utoipa::ToSchema;
+
+#[derive(Deserialize, Serialize, ToSchema)]
+pub struct EmbeddingRequest {
+    pub input: Vec<String>,
+    pub model: String,
+    #[allow(dead_code)]
+    pub encoding_format: Option<String>,  
+    #[allow(dead_code)]
+    pub dimensions: Option<u32>,          
+    #[allow(dead_code)]
+    pub user: Option<String>,            
+}
+```
+
+#### 3.定义 API 文档结构体
+
+使用 `#[derive(OpenApi)]` 宏来定义 API 文档结构体，并在其中声明 API的路径和所用到的结构体，已经在chatig/src/apis/api_doc.rs中进行定义，新的接口和所用到的结构体需要在其中申明，具体结构样例如下：
+
+```rust
+use utoipa::OpenApi;
+use crate::apis::models_api::schemas::{EmbeddingRequest,EmbeddingResponse};
+use crate::apis::schemas::ErrorResponse;
+
+#[derive(OpenApi)]
+#[openapi(
+    paths(
+        models_api::embeddings::v1_embeddings, //接口路径
+    ),
+    components(
+        schemas(ErrorResponse,EmbeddingRequest,EmbeddingResponse) //所用结构体
+    ) 
+)]
+
+pub struct ApiDoc;
+```
+
+#### 4.添加注释
+
+在`#[utoipa::path]` 宏定义前利用`///`来添加注释，支持`markdown`语法，注释样例如图所示
+
+![swagger-annotation](images/swagger-annotation.png)
+
+#### 5.访问 Swagger UI
+
+访问网址 http://**/swagger-ui/ 即可得到Swagger可视化UI界面
+
 
 
 

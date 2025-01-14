@@ -1,9 +1,10 @@
 use serde::{Serialize, Deserialize};
+use utoipa::ToSchema;
 
 use crate::meta::init::get_pool;
 
 // file_object table structure
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, ToSchema)]
 pub struct FileObject {
     pub id: i32,           // 使用 i32 类型以匹配数据库表的 ID 类型
     pub object: String,

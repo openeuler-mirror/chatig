@@ -49,6 +49,17 @@ pub async fn upload_file(MultipartForm(form): MultipartForm<UploadForm>) -> Resu
     }
 }
 
+#[utoipa::path(
+    post,  // 请求方法
+    path = "/v1/file/completions",  // 路径
+    request_body = ChatCompletionRequest, //有问题
+    responses(
+        (status = 200, body = String), //还没写完
+        (status = 400, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
+
 #[post("/v1/file/completions")]
 pub async fn file_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
