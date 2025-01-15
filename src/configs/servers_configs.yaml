@@ -30,4 +30,7 @@ embeddings:
 Qwen-7B-Chat:
   url: "http://x.x.x.x:1025/v1/chat/completions"
   max-token: "Qwen-7B-Chat"
-  
+
+images:
+  get_image: "http://x.x.x.x:30007/v1/images/generations"
+  model_name: "sdxl-turbo"

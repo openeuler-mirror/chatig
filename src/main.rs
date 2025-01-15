@@ -72,6 +72,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(rate_limiter.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
+            .configure(apis::models_api::image::configure)
             .configure(apis::funcs_api::file_chat::configure)
             .configure(apis::funcs_api::rag::configure)
             .configure(apis::control_api::models::configure)

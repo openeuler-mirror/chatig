@@ -30,6 +30,13 @@ pub struct Embeddings{
     pub model_name: String,
 }
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct Images{
+    pub get_image: String,
+    #[allow(dead_code)]
+    pub model_name: String,
+}
+
 
 // Configuration file
 #[derive(Deserialize, Debug, Clone)]
@@ -37,6 +44,7 @@ pub struct ServerConfig {
     pub chatchat: ChatChat,
     pub euler_copilot: EulerCopilot,
     pub embeddings: Embeddings,
+    pub images: Images,
 }
 
 pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> {
