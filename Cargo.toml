@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-actix-web = "4.0"
+actix-web = { version = "4.9.0", features = ["rustls-0_23"] }
 actix-service = "2.0"
 actix-rt = "2.5.0"
 actix-cors = "0.6.2"
@@ -40,3 +40,5 @@ rdkafka = "0.28"
 utoipa = { version = "4", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "4", features = ["actix-web"] }
 utoipa-axum = { version = "0", default-features = false }
+rustls = "0.23.20"
+rustls-pemfile = "2.2.0"

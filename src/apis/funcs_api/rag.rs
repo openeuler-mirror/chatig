@@ -26,6 +26,17 @@ impl RAG {
     }
 }
 
+#[utoipa::path(
+    post,  // 请求方法
+    path = "/v1/rag/completions",  // 路径
+    request_body = ChatCompletionRequest,
+    responses(
+        (status = 200, body = String), //还没写完
+        (status = 400, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
+
 #[post("/v1/rag/completions")]
 pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
     // 1. Validate that required fields exist in the request data

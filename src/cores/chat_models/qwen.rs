@@ -5,13 +5,12 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::StreamExt;
 use bytes::Bytes;
-use chrono::Utc;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::configs::settings::load_models_config;
 use crate::cores::chat_models::chat_controller::Completions;
-use crate::utils::kafka::{send_to_kafka, Kafka, FieldsInfo, TagsInfo};
+use crate::utils::kafka::{send_kafka_message_non_stream, send_kafka_message_stream};
 use crate::GLOBAL_CONFIG;
 
 
@@ -156,35 +155,17 @@ async fn completions_response_non_stream(response: Response) -> Result<HttpRespo
   });
 
     if config.enabled {
-        let timestamp = Utc::now().timestamp();
-        let kafka = Kafka {
-            timestamp: timestamp,
-            fields: FieldsInfo {
-                completion_tokens: chat_response.usage.prompt_tokens.to_string(),
-                prompt_tokens: chat_response.usage.completion_tokens.to_string(),
-                total_tokens: chat_response.usage.total_tokens.to_string(),
-            },
-            tags: TagsInfo {
-                user_name: "example_user".to_string(),
-                model_name: chat_response.model.to_string(),
-            },
-        };
-        let kafka_json = serde_json::to_string(&kafka).unwrap();
-
-        let result = send_to_kafka(&kafka_json).await;
-        match result {
-            Ok(()) => {
-                Ok(HttpResponse::Ok().json(res))
-            },
-            Err(e) => {
+        match send_kafka_message_non_stream(&chat_response, res).await {
+            Ok(response) => Ok(HttpResponse::Ok().json(response)),
+            Err(error) => {
                 Ok(HttpResponse::InternalServerError().json(json!({
-                    "error": "Failed to send message to Kafka",
-                    "details": format!("{:?}", e)
+                    "error": "Failed to send message to Kafka queue",
+                    "details": format!("{:?}", error)
                 })))
             }
         }
-    } else {
-        Ok(HttpResponse::Ok().json(res))
+        } else {
+            Ok(HttpResponse::Ok().json(res))
     }
 }
 
@@ -278,30 +259,15 @@ async fn completions_response_stream(response: Response) -> Result<HttpResponse,
 
                     // If usage is exist
                     match &chat_response.usage {
-                        Some(usage) => {
+                        Some(_usage) => {
                             if config.enabled{
-                                let timestamp = Utc::now().timestamp();
-                                let kafka = Kafka {
-                                    timestamp: timestamp,
-                                    fields: FieldsInfo {
-                                        completion_tokens: usage.prompt_tokens.to_string(),
-                                        prompt_tokens: usage.completion_tokens.to_string(),
-                                        total_tokens: usage.total_tokens.to_string(),
-                                    },
-                                    tags: TagsInfo {
-                                        user_name: "example_user".to_string(),
-                                        model_name: chat_response.model.to_string(),
-                                    },
-                                };
-                                let kafka_json = serde_json::to_string(&kafka).unwrap();
-                                let result = send_to_kafka(&kafka_json).await;
+                                let result = send_kafka_message_stream(&chat_response).await;
                                 match result {
                                     Ok(()) => {
                                         break
                                     },
                                     Err(e) => {
-                                        yield Err(format!("Failed to send message to Kafka: {:?}", e));
-                                        // println!("Failed to send message: {:?}", e),
+                                        yield Err(e);
                                     }
                                 }
                             }

@@ -1,6 +1,6 @@
 use actix_web::{App, HttpServer};
 use actix_cors::Cors;
-use std::rc::Rc;
+use std::{rc::Rc, fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
@@ -44,6 +44,21 @@ async fn main() -> std::io::Result<()> {
     let port = config.port;
     println!("Starting server on port {}", port);
 
+    //Https set
+    let mut certs_file = BufReader::new(File::open("docs/https/server.crt").unwrap());
+    let mut key_file = BufReader::new(File::open("docs/https/server.key").unwrap());
+
+    let tls_certs = rustls_pemfile::certs(&mut certs_file)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    let tls_key = rustls_pemfile::private_key(&mut key_file).unwrap().unwrap();
+
+    // set up TLS config options
+    let tls_config = rustls::ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(tls_certs, tls_key)
+        .unwrap();
+
     // Start the HTTP server
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -67,7 +82,7 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::services::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
-    .bind(("0.0.0.0", port))?
+    .bind_rustls_0_23(("0.0.0.0", port), tls_config)?
     .run()
     .await
 }
