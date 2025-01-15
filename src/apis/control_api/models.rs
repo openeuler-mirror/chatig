@@ -1,14 +1,36 @@
 use actix_web::{get, delete, web, HttpResponse, Responder};
 use serde_json::json;
+use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::cores::models::{get_model, get_models};
 
+#[derive(Deserialize,Serialize,ToSchema)]
+pub struct ModelErrorDetails {
+    pub error: String,
+    pub details: String,
+}
+
+#[derive(Deserialize,Serialize,ToSchema)]
+pub struct ModelErrorName {
+    pub error: String,
+    pub model_name: String,
+}
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(models)
        .service(model_info)
        .service(delete_model);
 }
+
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/v1/models",  // 路径
+    responses(
+        (status = 200, body = Vec<Model>),
+        (status = 500, body = ModelErrorDetails)
+    )  // 响应内容
+)]
 
 // Lists the currently available models, and provides basic information about each one such as the owner and availability.
 #[get("/v1/models")]
@@ -27,6 +49,17 @@ pub async fn models() -> impl Responder {
         }
     }
 }
+
+#[utoipa::path(
+    get,  // 请求方法
+    path = "/v1/models/{model}",  // 路径
+    responses(
+        (status = 200, body = Model),
+        (status = 404, body = ModelErrorName),
+        (status = 500, body = ModelErrorDetails)
+    )  // 响应内容
+    //params(("model_name",),)
+)]
 
 // Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
 #[get("/v1/models/{model}")]
@@ -55,6 +88,15 @@ pub async fn model_info(path: web::Path<String>) -> impl Responder {
         }
     }
 }
+
+#[utoipa::path(
+    delete,  // 请求方法
+    path = "/v1/models/{model}",  // 路径
+    responses(
+        (status = 501, description = "Not implemented", body = String)
+    )  // 响应内容
+    //params(("model_name",),)
+)]
 
 // Delete a fine-tuned model. You must have the Owner role in your organization to delete a model.
 // And we don't support this feature now.

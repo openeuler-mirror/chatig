@@ -26,6 +26,17 @@ impl EMB {
     }
 }
 
+#[utoipa::path(
+    post,  // 请求方法
+    path = "/v1/embeddings",  // 路径
+    request_body = EmbeddingRequest,
+    responses(
+        (status = 200, body = EmbeddingResponse),
+        (status = 400, body = ErrorResponse),
+        (status = 500, body = ErrorResponse),
+    )  // 响应内容
+)]
+
 // Handle the POST request for /v1/embeddings.
 #[post("/v1/embeddings")]
 async fn v1_embeddings(req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
