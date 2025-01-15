@@ -1,0 +1,16 @@
+- id: "test01"
+  servicetype: "vllm"
+  status: "active"
+  url: "http://ip:port/api"
+  max_token: 10000
+  models:
+    - "Qwen-7B-Chat"
+    - "Qwen2.5-7B-instruct"
+- id: "test02"
+  servicetype: "mindie"
+  status: "active"
+  url: "http://ip:port/api"
+  max_token: 10000
+  models:
+    - "Qwen-7B-Chat"
+    - "Qwen2.5-7B-instruct"

@@ -61,6 +61,7 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::projects::configure)
             .configure(apis::control_api::invitation_code::configure)
             .configure(apis::control_api::users::configure)
+            .configure(apis::control_api::services::configure)
     }) 
     .bind(("0.0.0.0", port))?
     .run()
