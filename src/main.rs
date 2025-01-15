@@ -3,6 +3,7 @@ use actix_cors::Cors;
 use std::{rc::Rc, fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use log4rs::init_file;
 
 mod apis;
 mod cores;
@@ -16,7 +17,6 @@ use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
-use crate::utils::{log::init_logger, kafka::start_kafka_sender};
 use crate::apis::api_doc::ApiDoc;
 
 #[cfg(test)]
@@ -24,14 +24,10 @@ mod test;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Set up the AppState struct
     let config = &*GLOBAL_CONFIG;
 
-    // Init log
-    init_logger(&config.log_level, "chatig");
-
-    // Start kafka push messages
-    tokio::spawn(start_kafka_sender());
+    let config_path = format!("{}/src/configs/log4rs.yaml", env!("CARGO_MANIFEST_DIR"));
+    init_file(&config_path, Default::default()).unwrap();
 
     let db_pool = setup_database().await
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;

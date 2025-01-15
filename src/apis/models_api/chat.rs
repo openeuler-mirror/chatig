@@ -1,5 +1,6 @@
-use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::{get, post, web, Error, HttpResponse, Responder, HttpRequest};
 use actix_web::error::ErrorBadRequest;
+use log::{info, error};
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
@@ -7,6 +8,7 @@ use crate::apis::schemas::ErrorResponse;
 use crate::cores::chat_models::chat_controller::Completions;
 use crate::cores::chat_models::qwen::Qwen;
 use crate::cores::chat_models::glm::GLM;
+use crate::utils::log::log_request;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
@@ -58,7 +60,7 @@ impl LLM {
 )]
 
 #[post("/v1/chat/completions")]
-pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
+pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
         let error_response = ErrorResponse {
@@ -79,12 +81,13 @@ pub async fn completions(req_body: web::Json<ChatCompletionRequest>) -> Result<i
     // 3. Send the request to the model service
     let response = model.completions(req_body).await;
     match response {
-        Ok(resp) => Ok(resp),
+        Ok(resp) => {
+            info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
+            Ok(resp)
+        }
         Err(err) => {
-            let error_response = ErrorResponse {
-                error: format!("Failed to get response from {} chat completions: {}", model_name, err),
-            };
-            Ok(HttpResponse::InternalServerError().json(error_response))
+            error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
+            Err(err)
         }
     }  
 }
