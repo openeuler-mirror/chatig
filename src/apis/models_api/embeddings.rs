@@ -1,4 +1,4 @@
-use actix_web::{get, post, web, Error, HttpResponse, Responder};
+use actix_web::{post, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorBadRequest;
 
 use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse};
