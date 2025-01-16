@@ -75,6 +75,7 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::projects::configure)
             .configure(apis::control_api::invitation_code::configure)
             .configure(apis::control_api::users::configure)
+            .configure(apis::control_api::services::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
     .bind_rustls_0_23(("0.0.0.0", port), tls_config)?

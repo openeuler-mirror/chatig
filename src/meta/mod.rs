@@ -3,3 +3,4 @@ pub mod files;
 pub mod projects;
 pub mod users;
 pub mod connection;
+pub mod services;

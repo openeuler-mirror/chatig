@@ -20,7 +20,8 @@ pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, 
     create_user_object_table(&client).await?;
     create_models_table(&client).await?;
     init_models_table(&mut client).await?;
-
+    create_services_table(&mut client).await?;
+    create_models_service_table(&mut client).await?;
     Ok(pool) 
 }
 
@@ -166,5 +167,36 @@ async fn init_models_table(client: &mut Client) -> Result<(), Error> {
     }
     tx.commit().await.unwrap();
 
+    Ok(())
+}
+
+// Create the service table
+pub async fn create_services_table(client: &Client) -> Result<(), Error> {
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS services (
+            id TEXT PRIMARY KEY,
+            servicetype TEXT NOT NULL,
+            status TEXT NOT NULL,
+            url TEXT NOT NULL,
+            max_token BIGINT NOT NULL
+        );
+    "#;
+
+    client.execute(create_table_query, &[]).await?;
+    Ok(())
+}
+
+// Create the models service table
+pub async fn create_models_service_table(client: &Client) -> Result<(), Error> {
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS models_service (
+            serviceid TEXT NOT NULL,
+            modelid TEXT NOT NULL,
+            PRIMARY KEY (serviceid, modelid),
+            FOREIGN KEY (serviceid) REFERENCES services(id) ON DELETE CASCADE
+        );
+    "#;
+
+    client.execute(create_table_query, &[]).await?;
     Ok(())
 }
