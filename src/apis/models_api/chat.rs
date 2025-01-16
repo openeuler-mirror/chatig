@@ -53,7 +53,7 @@ impl LLM {
     path = "/v1/chat/completions",  // 路径
     request_body = ChatCompletionRequest,
     responses(
-        (status = 200, body = String), //还没有写完
+        (status = 200, body = CompletionsResponse), //还没有写完
         (status = 400, body = ErrorResponse),
         (status = 500, body = ErrorResponse),
     )  // 响应内容
