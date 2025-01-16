@@ -5,24 +5,20 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::StreamExt;
 use bytes::Bytes;
-use chrono::Utc;
-use log::info;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::configs::settings::load_models_config;
 use crate::cores::chat_models::chat_controller::Completions;
-use crate::utils::log::{Tokens, FieldsInfo, TagsInfo};
 
-
-pub struct Qwen;
+pub struct Llama;
 
 #[async_trait]
-impl Completions for Qwen{
+impl Completions for Llama{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration 
         let (reqwest_url, model_name, max_tokens) = get_model_params(&req_body.model)?;
-        
+
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true);
         let mut request_body = json!({
@@ -72,7 +68,6 @@ impl Completions for Qwen{
     }
 }
 
-// get the parameter information of the specific model
 fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
     let models_config = load_models_config()
         .map_err(|err| ErrorInternalServerError(format!("Failed to load models config: {}", err)))?;
@@ -80,32 +75,21 @@ fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
     let reqwest_url: String;
     let model_name: String;
     let max_tokens: u32;
+
     match model {
-        "Qwen/Qwen2.5-7B-Instruct" => {
-            reqwest_url = models_config.qwen_models.qwen2_5_7b_instruct.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen2_5_7b_instruct.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen2_5_7b_instruct.max_tokens.clone();
-        },
-        "Qwen/Qwen2.5-14B-Instruct" => {
-            reqwest_url = models_config.qwen_models.qwen2_5_14b_instruct.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen2_5_14b_instruct.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen2_5_14b_instruct.max_tokens.clone();
-        },
-        "Qwen/Qwen-7B-Chat" => {
-            reqwest_url = models_config.qwen_models.qwen_7b_chat.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen_7b_chat.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen_7b_chat.max_tokens.clone();
-        },
+        "meta-llama/Llama-3.1-8B-Instruct" => {
+            reqwest_url = models_config.llama_models.llama3_1_8b_instruct.reqwest_url;
+            model_name = models_config.llama_models.llama3_1_8b_instruct.model_name;
+            max_tokens = models_config.llama_models.llama3_1_8b_instruct.max_tokens;
+        }
         _ => return Err(ErrorBadRequest(format!("Unsupported model: {}", model))),
     }
 
     Ok((reqwest_url, model_name, max_tokens))
 }
 
-
 // Handle non-streaming response requests
 async fn completions_response_non_stream(response: Response) -> Result<HttpResponse, Error> {
-
     // 1. Parse the JSON response body into the KbChatResponse struct
     let response_text = response.text().await
         .map_err(|err| ErrorInternalServerError(format!("Failed to read response: {}", err)))?;
@@ -146,28 +130,12 @@ async fn completions_response_non_stream(response: Response) -> Result<HttpRespo
       }
   });
 
-    let timestamp = Utc::now().timestamp();
-    let kafka = Tokens {
-        timestamp: timestamp,
-        fields: FieldsInfo {
-            completion_tokens: chat_response.usage.prompt_tokens,
-            prompt_tokens: chat_response.usage.completion_tokens,
-            total_tokens: chat_response.usage.total_tokens,
-        },
-        tags: TagsInfo {
-            user_name: "example_user".to_string(),
-            model_name: chat_response.model.to_string(),
-        },
-    };
-    let kafka_json = serde_json::to_string(&kafka).unwrap();
-    info!(target: "token", "{}", kafka_json);
-    Ok(HttpResponse::Ok().json(res))
+  Ok(HttpResponse::Ok().json(res))
 }
 
 
 // Handle streaming response requests
 async fn completions_response_stream(response: Response) -> Result<HttpResponse, Error> {
-
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream();
 
@@ -192,14 +160,14 @@ async fn completions_response_stream(response: Response) -> Result<HttpResponse,
         let res = json!({
             "id": chat_response.id,
             "model": chat_response.model,
-            "created": chat_response.created,
-            "object": chat_response.object,
+            // "created": chat_response.created,
+            // "object": chat_response.object,
             "choices": [
                 {
                     "index": chat_response.choices[0].index,
                     "delta": {
                         "role": chat_response.choices[0].delta.role,
-                        "content": chat_response.choices[0].delta.content
+                        // "content": chat_response.choices[0].delta.content
                     },
                     "finish_reason": ""
                 }
@@ -251,38 +219,16 @@ async fn completions_response_stream(response: Response) -> Result<HttpResponse,
                         }
                     };
 
-                    // If usage is exist
-                    match &chat_response.usage {
-                        Some(usage) => {
-                            let timestamp = Utc::now().timestamp();
-                            let kafka = Tokens {
-                                timestamp: timestamp,
-                                fields: FieldsInfo {
-                                    completion_tokens: usage.prompt_tokens,
-                                    prompt_tokens: usage.completion_tokens,
-                                    total_tokens: usage.total_tokens,
-                                },
-                                tags: TagsInfo {
-                                    user_name: "example_user".to_string(),
-                                    model_name: chat_response.model.to_string(),
-                                },
-                            };
-                            let kafka_json = serde_json::to_string(&kafka).unwrap();
-                            info!(target: "token", "{}", kafka_json);
-                            break;
-                        },
-                        None => {
-                            if chat_response.choices[0].finish_reason == Some("stop".to_string()){
-                                continue;
-                            }
-                        },
+                    // Create a custom response body
+                    if chat_response.choices[0].finish_reason == Some("stop".to_string()){
+                        break;
                     }
 
                     let res = json!({
                         "id": chat_response.id,
                         "model": chat_response.model,
-                        "created": chat_response.created,
-                        "object": chat_response.object,
+                        // "created": chat_response.created,
+                        // "object": chat_response.object,
                         "choices": [
                             {
                                 "index": chat_response.choices[0].index,

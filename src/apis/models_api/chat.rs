@@ -9,6 +9,7 @@ use crate::cores::chat_models::chat_controller::Completions;
 use crate::cores::chat_models::qwen::Qwen;
 use crate::cores::chat_models::glm::GLM;
 use crate::utils::log::log_request;
+use crate::cores::chat_models::llama::Llama;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
@@ -75,6 +76,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     let model: LLM = match model_series {
         "Qwen" => LLM::new(Box::new(Qwen {})),
         "GLM" => LLM::new(Box::new(GLM {})),
+        "meta-llama" => LLM::new(Box::new(Llama {})),
         _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", model_series))),
     };
 
