@@ -1,10 +1,11 @@
 use core::str;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 
 
 // Define the API format accepted by the interface
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CompletionsResponse {
     pub id: String,              // Unique identifier for each generated response.
     pub choices: Vec<CompletionsChoice>,    // List of generated text options returned.
@@ -17,7 +18,7 @@ pub struct CompletionsResponse {
     pub message_id: Option<String>, // Unique identifier for the message.
     pub status: Option<String>,  // Status of the request.
 }
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CompletionsChoice {
     pub finish_reason: String,   // Reason for finishing the completion.
     pub index: u32,              // Index of the completion.
@@ -25,7 +26,7 @@ pub struct CompletionsChoice {
     pub message: CompletionsAssistantMessage, // Message object containing the completion.
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CompletionsAssistantMessage{
     pub content: String,        // Content of the completion.
     pub refusal: Option<String>, // Refusal message.
@@ -34,7 +35,7 @@ pub struct CompletionsAssistantMessage{
     pub tool_calls: Option<Vec<String>>, // Tool calls.
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CompletionsUsage {
     pub completion_tokens: u32,  // Number of tokens used for the completion.
     pub prompt_tokens: u32,      // Number of tokens used for the prompt.
@@ -42,7 +43,7 @@ pub struct CompletionsUsage {
 }
 
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CompletionsStreamResponse {
     pub id: String,              // Unique identifier for each generated response.
     pub choices: Vec<CompletionsStreamChoice>,    // List of generated text options returned.
@@ -56,7 +57,7 @@ pub struct CompletionsStreamResponse {
     pub status: Option<String>,  // Status of the request.
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CompletionsStreamChoice {
     pub finish_reason: Option<String>,   // Reason for finishing the completion.
     pub index: u32,              // Index of the completion.
@@ -64,7 +65,7 @@ pub struct CompletionsStreamChoice {
     pub delta: CompletionsDelta,   // delta object containing the completion.
 }
 
-#[derive(Deserialize, Serialize)]
+#[derive(Deserialize, Serialize, ToSchema)]
 pub struct CompletionsDelta {
     pub content: Option<String>,        // Content of the completion.
     pub function_call: Option<String>, // Function call.

@@ -70,6 +70,9 @@ where
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
         let db_pool = self.db_pool.clone();
+        if req.path().starts_with("/swagger-ui") || req.path().starts_with("/api-docs"){
+            return Box::pin(self.service.call(req));
+        }
 
         let api_key = req
             .headers()

@@ -52,7 +52,7 @@ pub async fn upload_file(MultipartForm(form): MultipartForm<UploadForm>) -> Resu
 #[utoipa::path(
     post,  // 请求方法
     path = "/v1/file/completions",  // 路径
-    request_body = ChatCompletionRequest, //有问题
+    request_body = ChatCompletionRequest, 
     responses(
         (status = 200, body = String), //还没写完
         (status = 400, body = ErrorResponse),
