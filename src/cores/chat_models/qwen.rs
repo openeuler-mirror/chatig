@@ -10,23 +10,26 @@ use log::info;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
-use crate::configs::settings::load_models_config;
+use crate::cores::models::get_model;
 use crate::cores::chat_models::chat_controller::Completions;
 use crate::utils::log::{Tokens, FieldsInfo, TagsInfo};
 
 
-pub struct Qwen;
+pub struct Qwen{
+    pub model_name: String,
+}
 
 #[async_trait]
 impl Completions for Qwen{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration 
-        let (reqwest_url, model_name, max_tokens) = get_model_params(&req_body.model)?;
-        
+        let model = get_model(&self.model_name).await?;
+        let model = model.as_ref().ok_or_else(|| ErrorBadRequest(format!("Unsupported model: {}", &req_body.model)))?;
+
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true);
         let mut request_body = json!({
-            "model": model_name,
+            "model": model.model_name,
             "temperature": req_body.temperature.unwrap_or(0.3),
             "n": req_body.n.unwrap_or(1),
             "stream": stream,
@@ -35,7 +38,7 @@ impl Completions for Qwen{
             "frequency_penalty": req_body.frequency_penalty.unwrap_or(0),
             "logit_bias": null,
             "user": req_body.user.clone(),
-            "max_tokens": req_body.max_tokens.unwrap_or(max_tokens),
+            "max_tokens": req_body.max_tokens,
             "messages": req_body.messages,
         });
 
@@ -52,7 +55,7 @@ impl Completions for Qwen{
 
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(&reqwest_url)
+        let response = match client.post(model.clone().request_url)
             .header("Content-Type", "application/json")
             .json(&request_body)
             .send()
@@ -70,36 +73,6 @@ impl Completions for Qwen{
             completions_response_non_stream(response).await
         }
     }
-}
-
-// get the parameter information of the specific model
-fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
-    let models_config = load_models_config()
-        .map_err(|err| ErrorInternalServerError(format!("Failed to load models config: {}", err)))?;
-
-    let reqwest_url: String;
-    let model_name: String;
-    let max_tokens: u32;
-    match model {
-        "Qwen/Qwen2.5-7B-Instruct" => {
-            reqwest_url = models_config.qwen_models.qwen2_5_7b_instruct.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen2_5_7b_instruct.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen2_5_7b_instruct.max_tokens.clone();
-        },
-        "Qwen/Qwen2.5-14B-Instruct" => {
-            reqwest_url = models_config.qwen_models.qwen2_5_14b_instruct.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen2_5_14b_instruct.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen2_5_14b_instruct.max_tokens.clone();
-        },
-        "Qwen/Qwen-7B-Chat" => {
-            reqwest_url = models_config.qwen_models.qwen_7b_chat.reqwest_url.clone();
-            model_name = models_config.qwen_models.qwen_7b_chat.model_name.clone();
-            max_tokens = models_config.qwen_models.qwen_7b_chat.max_tokens.clone();
-        },
-        _ => return Err(ErrorBadRequest(format!("Unsupported model: {}", model))),
-    }
-
-    Ok((reqwest_url, model_name, max_tokens))
 }
 
 
@@ -144,7 +117,7 @@ async fn completions_response_non_stream(response: Response) -> Result<HttpRespo
           "completion_tokens": chat_response.usage.completion_tokens,
           "total_tokens": chat_response.usage.total_tokens
       }
-  });
+    });
 
     let timestamp = Utc::now().timestamp();
     let kafka = Tokens {

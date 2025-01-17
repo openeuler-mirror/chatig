@@ -65,7 +65,6 @@ pub async fn models() -> impl Responder {
 #[get("/v1/models/{model}")]
 pub async fn model_info(path: web::Path<String>) -> impl Responder {
     let model_name = path.into_inner(); // 提取路径参数
-
     // 调用封装的函数查询指定模型
     match get_model(&model_name).await {
         Ok(Some(model)) => {

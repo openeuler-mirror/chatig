@@ -52,80 +52,6 @@ pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> 
     Ok(config)
 }
 
-// ---------------------------------------------- Models Config ----------------------------------------------
-#[derive(Deserialize, Debug, Clone)]
-pub struct ModelConfig {
-    pub qwen_models: QwenModels,
-    pub glm_models: GLMModels,
-    pub llama_models: LlamaModels,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct QwenModels {
-    pub qwen2_5_7b_instruct: Qwen2_5_7BInstruct,
-    pub qwen2_5_14b_instruct: Qwen2_5_14BInstruct,
-    pub qwen_7b_chat: Qwen7BChat,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Qwen2_5_7BInstruct {
-    pub model_name: String,
-    pub max_tokens: u32,
-    pub reqwest_url: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Qwen2_5_14BInstruct {
-    pub model_name: String,
-    pub max_tokens: u32,
-    pub reqwest_url: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Qwen7BChat {
-    pub model_name: String,
-    pub max_tokens: u32,
-    pub reqwest_url: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct GLMModels {
-    pub glm_7b_chat: GLM7BChat,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct GLM7BChat {
-    pub model_name: String,
-    pub max_tokens: u32,
-    pub reqwest_url: String,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct LlamaModels {
-    pub llama3_1_8b_instruct: Llama3_1_8BInstruct,
-}
-
-#[derive(Deserialize, Debug, Clone)]
-pub struct Llama3_1_8BInstruct {
-    pub model_name: String,
-    pub max_tokens: u32,
-    pub reqwest_url: String,
-}
-
-
-pub fn load_models_config() -> Result<ModelConfig, Box<dyn std::error::Error>> {
-    let config_path = if metadata("/etc/chatig/models_configs.yaml").is_ok() {
-        "/etc/chatig/models_configs.yaml"
-    } else {
-        "src/configs/models_configs.yaml"
-    };
-    let mut file = File::open(config_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let config: ModelConfig = serde_yaml::from_str(&contents)?;
-    Ok(config)
-}
-
 // ---------------------------------------------- Config ----------------------------------------------
 #[derive(Debug, Deserialize, Clone)]
 pub struct Config {
@@ -138,11 +64,11 @@ pub struct Config {
 
 impl Config {
     pub fn load_config() -> Config {
-        let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-            "/etc/chatig/configs.yaml"
-        } else {
-            "src/configs/configs.yaml"
-        };
+        // let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+        //     "/etc/chatig/configs.yaml"
+        // } else {
+        //     "src/configs/configs.yaml"
+        // };
         let config_path = "src/configs/configs.yaml";
         let mut file = File::open(config_path).expect("Failed to open config file");
         let mut contents = String::new();
