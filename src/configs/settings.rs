@@ -63,6 +63,7 @@ pub struct Config {
     pub rate_limit_tps: usize,
     pub rate_limit_bucket_capacity: usize,
     pub rate_limit_refill_interval: u64,
+    pub rate_limit_enbled: bool,
 }
 
 impl Config {

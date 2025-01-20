@@ -5,6 +5,8 @@ use std::sync::Arc;
 use futures::future::{ok, LocalBoxFuture, Ready};
 use tokio::sync::Mutex;
 
+use crate::configs::settings::GLOBAL_CONFIG;
+
 // 定义限流中间件
 #[derive(Clone)]
 pub struct RateLimitMiddleware {
@@ -65,10 +67,14 @@ where
     }
 
     fn call(&self, req: ServiceRequest) -> Self::Future {
-        let limiter = self.limiter.clone();
+        let config = &*GLOBAL_CONFIG;
         let fut = self.service.call(req);
+        let limiter = self.limiter.clone();
 
         Box::pin(async move {
+            if !config.rate_limit_enbled {
+                return fut.await;
+            }
             let allowed = {
                 let limiter = limiter.lock().await;
                 limiter.try_acquire(1)

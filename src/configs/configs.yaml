@@ -16,6 +16,7 @@ connection_num: 10
 # pgsql/mysql
 database_type: "pgsql"
 # rate limit
+rate_limit_enbled: false
 rate_limit_tps: 1000
 rate_limit_bucket_capacity: 2000
 # refill/ms
