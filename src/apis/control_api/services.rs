@@ -1,6 +1,6 @@
 use actix_web::{delete, error, get, post, put, web, Error, HttpResponse, Responder};
 use serde_json::json;
-use crate::cores::services::{ServiceConfig,ServiceManager};
+use crate::cores::services::{ServiceConfig, ServiceManager};
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(load_services)

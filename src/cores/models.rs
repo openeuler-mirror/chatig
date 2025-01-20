@@ -1,5 +1,5 @@
 use crate::meta::connection::{get_db_connection,DbConnection};
-use crate::apis::control_api::schemas::Model;
+use crate::meta::models::Model;
 use sqlx::Row;
 
 
@@ -9,13 +9,15 @@ pub async fn get_models() -> Result<Vec<Model>, Box<dyn std::error::Error>> {
     match db_conn {
         // 处理 MySQL 数据库
         DbConnection::MySql(mut conn) => {
-            let rows = sqlx::query("SELECT id, object, created, owned_by FROM models")
+            let rows = sqlx::query("SELECT * FROM models")
                 .fetch_all(&mut *conn)
                 .await?;
             for row in rows {
                 let model = Model {
                     id: row.get("id"),
                     object: row.get("object"),
+                    model_name: row.get("model_name"),
+                    request_url: row.get("request_url"),
                     created: row.get("created"),
                     owned_by: row.get("owned_by"),
                 };
@@ -25,13 +27,15 @@ pub async fn get_models() -> Result<Vec<Model>, Box<dyn std::error::Error>> {
         }
         // 处理 PostgreSQL 数据库
         DbConnection::Postgres(mut conn) => {
-            let rows = sqlx::query("SELECT id, object, created, owned_by FROM models")
+            let rows = sqlx::query("SELECT * FROM models")
                 .fetch_all(&mut *conn)
                 .await?;
             for row in rows {
                 let model = Model {
                     id: row.get("id"),
                     object: row.get("object"),
+                    model_name: row.get("model_name"),
+                    request_url: row.get("request_url"),
                     created: row.get("created"),
                     owned_by: row.get("owned_by"),
                 };
@@ -48,7 +52,7 @@ pub async fn get_model(model_name: &str) -> Result<Option<Model>, Box<dyn std::e
 
     match db_conn {
         DbConnection::MySql(mut conn) => {
-            let row = sqlx::query("SELECT id, object, created, owned_by FROM models WHERE id = ?")
+            let row = sqlx::query("SELECT * FROM models WHERE id = ?")
                 .bind(model_name) // 绑定模型名称
                 .fetch_optional(&mut *conn)
                 .await?;
@@ -57,6 +61,8 @@ pub async fn get_model(model_name: &str) -> Result<Option<Model>, Box<dyn std::e
                 Ok(Some(Model {
                     id: row.get("id"),
                     object: row.get("object"),
+                    model_name: row.get("model_name"),
+                    request_url: row.get("request_url"),
                     created: row.get("created"),
                     owned_by: row.get("owned_by"),
                 }))
@@ -65,7 +71,7 @@ pub async fn get_model(model_name: &str) -> Result<Option<Model>, Box<dyn std::e
             }
         }
         DbConnection::Postgres(mut conn) => {
-            let row = sqlx::query("SELECT id, object, created, owned_by FROM models WHERE id = $1")
+            let row = sqlx::query("SELECT * FROM models WHERE id = $1")
                 .bind(model_name)
                 .fetch_optional(&mut *conn)
                 .await?;
@@ -74,6 +80,8 @@ pub async fn get_model(model_name: &str) -> Result<Option<Model>, Box<dyn std::e
                 Ok(Some(Model {
                     id: row.get("id"),
                     object: row.get("object"),
+                    model_name: row.get("model_name"),
+                    request_url: row.get("request_url"),
                     created: row.get("created"),
                     owned_by: row.get("owned_by"),
                 }))

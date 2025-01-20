@@ -8,21 +8,24 @@ use bytes::Bytes;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
-use crate::configs::settings::load_models_config;
+use crate::cores::models::get_model;
 use crate::cores::chat_models::chat_controller::Completions;
 
-pub struct GLM;
+pub struct GLM{
+    pub model_name: String,
+}
 
 #[async_trait]
 impl Completions for GLM{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
-        let (reqwest_url, model_name, max_tokens) = get_model_params(&req_body.model)?;
+        let model = get_model(&self.model_name).await?;
+        let model = model.as_ref().ok_or_else(|| ErrorBadRequest(format!("Unsupported model: {}", &req_body.model)))?;
 
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true).clone();
         let request_body = json!({
-            "model": &model_name,
+            "model": model.model_name,
             "temperature": req_body.temperature.unwrap_or(0.3).clone(),
             "n": req_body.n.unwrap_or(1).clone(),
             "stream": stream,
@@ -31,13 +34,13 @@ impl Completions for GLM{
             "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
             "logit_bias": null,
             "user": req_body.user.clone(),
-            "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
+            // "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
             "messages": req_body.messages
         });
 
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(&reqwest_url)
+        let response = match client.post(model.clone().request_url)
             .header("Content-Type", "application/json")
             .json(&request_body)
             .send()
@@ -49,37 +52,12 @@ impl Completions for GLM{
         // 4. Return the response based on the request's streaming status
         if stream {
             // Handle streaming response requests
-            // let body_stream = response.bytes_stream();
-            // Ok(HttpResponse::Ok()
-            // .content_type("text/event-stream")
-            // .streaming(body_stream))
             completions_response_stream(response).await
         } else {
             // handle non-streaming response requests
             completions_response_non_stream(response).await
         }
     }
-}
-
-// get the parameter information of the specific model
-fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
-    let models_config = load_models_config()
-    .map_err(|err| ErrorInternalServerError(format!("Failed to load models config: {}", err)))?;
-
-    let reqwest_url: String;
-    let model_name: String;
-    let max_tokens: u32;
-
-    match model {
-        "GLM/GLM-7B-Chat" => {
-            reqwest_url = models_config.glm_models.glm_7b_chat.reqwest_url.clone();
-            model_name = models_config.glm_models.glm_7b_chat.model_name.clone();
-            max_tokens = models_config.glm_models.glm_7b_chat.max_tokens;
-        },
-        _ => return Err(ErrorBadRequest(format!("Unsupported model: {}", model))),
-    }
-
-    Ok((reqwest_url, model_name, max_tokens))
 }
 
 

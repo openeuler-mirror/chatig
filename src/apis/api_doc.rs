@@ -2,8 +2,7 @@ use utoipa::OpenApi;
 
 use crate::apis::models_api;
 use crate::apis::control_api;
-//use crate::apis::funcs_api;
-use crate::apis::control_api::schemas::Model;
+use crate::meta::models::Model;
 use crate::apis::models_api::schemas::{ChatCompletionRequest,Message,EmbeddingRequest,EmbeddingResponse,EmbeddingData,Usage};
 use crate::apis::control_api::models::{ModelErrorDetails,ModelErrorName};
 use crate::cores::schemas::{CompletionsResponse,CompletionsChoice,CompletionsAssistantMessage,CompletionsUsage,CompletionsStreamResponse,CompletionsStreamChoice,CompletionsDelta};

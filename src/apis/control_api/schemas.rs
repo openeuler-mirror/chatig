@@ -1,24 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::FromRow;
-use utoipa::ToSchema;
 
-// ------------------------------------------ Models API ------------------------------------------
-/*
-From https://platform.openai.com/docs/api-reference/models/object
-{
-  "id": "davinci",
-  "object": "model",  // The object type, which is always "model".
-  "created": 1686935002, // The Unix timestamp (in seconds) when the model was created.
-  "owned_by": "openai"
-}
-*/
-#[derive(Serialize, Deserialize, Debug, Clone, FromRow, ToSchema)]
-pub struct Model {
-    pub id: String,
-    pub object: String,
-    pub created: i64,
-    pub owned_by: String,
-}
 
 // ------------------------------------------ Invitation Code API ------------------------------------------ 
 // Define the invitation code API format accepted by the interface

@@ -4,7 +4,7 @@ use tokio_postgres::NoTls;
 use crate::configs::settings::GLOBAL_CONFIG;
 use std::{error, fs};
 use tokio_postgres::{Client, Error};
-use crate::apis::control_api::schemas::Model;
+use crate::meta::models::Model;
 use chrono::Utc;
 
 pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, Box<dyn error::Error>> {
@@ -18,10 +18,10 @@ pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, 
     create_invitation_code_table(&client).await?;
     create_project_object_table(&client).await?;
     create_user_object_table(&client).await?;
-    create_models_table(&client).await?;
-    init_models_table(&mut client).await?;
+    create_models_table(&mut client).await?;
     create_services_table(&mut client).await?;
     create_models_service_table(&mut client).await?;
+
     Ok(pool) 
 }
 
@@ -53,6 +53,7 @@ async fn create_file_object_table(client: &Client) -> Result<(), Error> {
     "#;
 
     client.execute(create_table_query, &[]).await?;
+
     Ok(())
 }
 
@@ -109,40 +110,53 @@ async fn create_user_object_table(client: &Client) -> Result<(), Error> {
 }
 
 // Create the models table
-async fn create_models_table(client: &Client) -> Result<(), Error> {
+async fn create_models_table(client: &mut Client) -> Result<(), Error> {
     let create_table_query = r#"
         CREATE TABLE IF NOT EXISTS models (
         id TEXT PRIMARY KEY,
         object TEXT NOT NULL,
+        model_name TEXT NOT NULL,
+        request_url TEXT NOT NULL,
         created BIGINT NOT NULL,
         owned_by TEXT NOT NULL
     );
     "#;
     client.execute(create_table_query, &[]).await?;
+
+    // Initialize the models table
+    init_models_table(client).await?;
+
     Ok(())
 }
 
 async fn init_models_table(client: &mut Client) -> Result<(), Error> {
+    println!("Initializing models table");
     let now = Utc::now();
     let timestamp = now.timestamp();
     let default_models = vec![
         Model {
-            id: "Qwen-7B-Chat".to_string(),
+            id: "Qwen2.5-14B-Instruct".to_string(),
             object: "model".to_string(),
+            model_name: "qwen2.5-instruct".to_string(),
+            request_url: "http://x.x.x.x:30007/v1/chat/completions".to_string(),
             created: timestamp,
             owned_by: "system".to_string(),
         },
         Model {
-            id: "Qwen2.5-7B-instruct".to_string(),
+            id: "Qwen2.5-7B-Instruct".to_string(),
             object: "model".to_string(),
+            model_name: "Qwen/Qwen2.5-7B-Instruct".to_string(),
+            request_url: "http://x.x.x.x:8000/v1/chat/completions".to_string(),
             created: timestamp,
             owned_by: "system".to_string(),
         },
     ]; 
-    let models: Vec<Model> = match fs::read_to_string("/etc/chatig/models.yaml") {
+
+    let models_path = "/etc/chatig/models.yaml";
+    let models: Vec<Model> = match fs::read_to_string(models_path) {
         Ok(content) => {
             serde_yaml::from_str(&content).unwrap_or_else(|_| {
-                println!("Failed to parse YAML, using default data.");
+                println!("Read YAML file successfully, but failed to parse it, using default data.");
                 default_models.clone()
             })
         }
@@ -155,11 +169,13 @@ async fn init_models_table(client: &mut Client) -> Result<(), Error> {
     let tx = client.transaction().await.unwrap();
     for model in &models {
         let _ = tx.execute(
-            "INSERT INTO models (id, object, created, owned_by) VALUES ($1, $2, $3, $4);",
+            "INSERT INTO models (id, object, model_name, request_url, created, owned_by) VALUES ($1, $2, $3, $4, $5, $6);",
             &[
                 &model.id,
                 &model.object,
-                &timestamp,
+                &model.model_name,
+                &model.request_url,
+                &model.created,
                 &model.owned_by,
             ],
         )

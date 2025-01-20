@@ -8,21 +8,24 @@ use bytes::Bytes;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
-use crate::configs::settings::load_models_config;
+use crate::cores::models::get_model;
 use crate::cores::chat_models::chat_controller::Completions;
 
-pub struct Llama;
+pub struct Llama{
+    pub model_name: String,
+}
 
 #[async_trait]
 impl Completions for Llama{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration 
-        let (reqwest_url, model_name, max_tokens) = get_model_params(&req_body.model)?;
+        let model = get_model(&self.model_name).await?;
+        let model = model.as_ref().ok_or_else(|| ErrorBadRequest(format!("Unsupported model: {}", &req_body.model)))?;
 
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true);
         let mut request_body = json!({
-            "model": model_name,
+            "model": model.model_name,
             "temperature": req_body.temperature.unwrap_or(0.3),
             "n": req_body.n.unwrap_or(1),
             "stream": stream,
@@ -31,7 +34,7 @@ impl Completions for Llama{
             "frequency_penalty": req_body.frequency_penalty.unwrap_or(0),
             "logit_bias": null,
             "user": req_body.user.clone(),
-            "max_tokens": req_body.max_tokens.unwrap_or(max_tokens),
+            // "max_tokens": req_body.max_tokens.unwrap_or(max_tokens),
             "messages": req_body.messages,
         });
 
@@ -48,7 +51,7 @@ impl Completions for Llama{
 
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(&reqwest_url)
+        let response = match client.post(model.clone().request_url)
             .header("Content-Type", "application/json")
             .json(&request_body)
             .send()
@@ -66,26 +69,6 @@ impl Completions for Llama{
             completions_response_non_stream(response).await
         }
     }
-}
-
-fn get_model_params(model: &str) -> Result<(String, String, u32), Error> {
-    let models_config = load_models_config()
-        .map_err(|err| ErrorInternalServerError(format!("Failed to load models config: {}", err)))?;
-
-    let reqwest_url: String;
-    let model_name: String;
-    let max_tokens: u32;
-
-    match model {
-        "meta-llama/Llama-3.1-8B-Instruct" => {
-            reqwest_url = models_config.llama_models.llama3_1_8b_instruct.reqwest_url;
-            model_name = models_config.llama_models.llama3_1_8b_instruct.model_name;
-            max_tokens = models_config.llama_models.llama3_1_8b_instruct.max_tokens;
-        }
-        _ => return Err(ErrorBadRequest(format!("Unsupported model: {}", model))),
-    }
-
-    Ok((reqwest_url, model_name, max_tokens))
 }
 
 // Handle non-streaming response requests

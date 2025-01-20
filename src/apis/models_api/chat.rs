@@ -70,17 +70,21 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
-    // 2. Call the underlying API and return a unified data format
-    let model_name = req_body.model.clone();
-    let model_series = model_name.split("/").next().unwrap_or("");
-    let model: LLM = match model_series {
-        "Qwen" => LLM::new(Box::new(Qwen {})),
-        "GLM" => LLM::new(Box::new(GLM {})),
-        "meta-llama" => LLM::new(Box::new(Llama {})),
-        _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", model_series))),
+    // 2. Parse the model name and series from the model field (Qwen/Qwen2.5-7B-Instruct)
+    let parts: Vec<&str> = req_body.model.split('/').collect();
+    if parts.len() != 2 {
+        return Err(ErrorBadRequest("Invalid model format"));
+    }
+
+    //  3. Call the underlying API and return a unified data format
+    let model: LLM = match parts[0] {
+        "Qwen" => LLM::new(Box::new(Qwen {model_name: parts[1].to_string()})),
+        "GLM" => LLM::new(Box::new(GLM {model_name: parts[1].to_string()})),
+        "meta-llama" => LLM::new(Box::new(Llama {model_name: parts[1].to_string()})),
+        _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", parts[0]))),
     };
 
-    // 3. Send the request to the model service
+    // 4. Send the request to the model service
     let response = model.completions(req_body).await;
     match response {
         Ok(resp) => {
