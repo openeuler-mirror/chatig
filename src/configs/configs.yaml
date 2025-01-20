@@ -15,3 +15,9 @@ database: "postgres://chatig:chatig@localhost/chatig"
 connection_num: 10
 # pgsql/mysql
 database_type: "pgsql"
+# rate limit
+rate_limit_enbled: false
+rate_limit_tps: 1000
+rate_limit_bucket_capacity: 2000
+# refill/ms
+rate_limit_refill_interval: 100

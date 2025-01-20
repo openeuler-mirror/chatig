@@ -1,5 +1,6 @@
 use actix_web::{App, HttpServer};
 use actix_cors::Cors;
+use std::time::Duration;
 use std::{rc::Rc, fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
@@ -17,6 +18,7 @@ use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
 use crate::middleware::api_key::ApiKeyCheck;
+use crate::middleware::rate_limit::RateLimitMiddleware;
 use crate::apis::api_doc::ApiDoc;
 
 #[cfg(test)]
@@ -55,6 +57,7 @@ async fn main() -> std::io::Result<()> {
         .with_single_cert(tls_certs, tls_key)
         .unwrap();
 
+    let rate_limiter = RateLimitMiddleware::new(config.rate_limit_tps, config.rate_limit_bucket_capacity, Duration::from_millis(config.rate_limit_refill_interval));
     // Start the HTTP server
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -66,6 +69,7 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(cors)
             .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
+            .wrap(rate_limiter.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
             .configure(apis::funcs_api::file_chat::configure)
