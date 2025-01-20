@@ -60,6 +60,9 @@ pub struct Config {
     pub database: String,
     pub connection_num: u32,
     pub database_type: String,
+    pub rate_limit_tps: usize,
+    pub rate_limit_bucket_capacity: usize,
+    pub rate_limit_refill_interval: u64,
 }
 
 impl Config {
