@@ -605,6 +605,20 @@ pub struct ApiDoc;
 
 
 
+## 五、初始化
+
+#### 1.数据库初始化
+
+在运行项目之前，首先需要初始化项目所需要的数据库，创建file_object、invitation_code、project_object、user_object、models、services、models_service表格，运行代码如下：
+
+```sh
+sh scripts/init_sql.sh -u chatig -p chatig
+```
+
+其中`-u`是数据库用户名，`-p`是数据库密码，需要提前创建好chatig数据库和一个数据库用户
+
+
+
 
 
 
