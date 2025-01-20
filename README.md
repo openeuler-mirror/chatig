@@ -6,15 +6,22 @@ Chatig 是一个高效、统一的推理网关，旨在为开发者和企业提�
 #### 软件架构
 Chatig 集成租户管理、流量控制、模型调度、安全审计等模块，除了提供统一的API接口，还能够实现多模型灵活切换、模型管理、数据隐私保护及使用日志监控等功能，帮助开发者和企业更高效地管理和优化智能应用的部署与运行。
 
-![](./docs/images/chatig-infra.jpg)
+![](./docs/images/arch.jpg)
 
+#### 模型支持
+- llama3
+- qwen2.5
+- bge
+- stable-diffusion
+- whisper
+- TBD 
 
 #### 安装教程
 
-1.  安装[copilot](https://gitee.com/openeuler/euler-copilot-framework/blob/master/docs/user-guide/%E9%83%A8%E7%BD%B2%E6%8C%87%E5%8D%97/%E7%BD%91%E7%BB%9C%E7%8E%AF%E5%A2%83%E4%B8%8B%E9%83%A8%E7%BD%B2%E6%8C%87%E5%8D%97.md)或者[chatchat](https://github.com/chatchat-space/Langchain-Chatchat)大模型服务框架。
+1.  部署任一推理引擎，例如vllm(https://github.com/vllm-project/vllm)。
 2.  按照[安装文档](./docs/pgsql/env_setup.md)，安装pgsql。
 3.  修改chatig的配置文件（./src/configs/）与pgsql环境变量(./.env)。
-4. 直接运行：`cargo run`
+4.  直接运行：`cargo run`
 
 #### 使用说明
 
@@ -22,7 +29,4 @@ Chatig 集成租户管理、流量控制、模型调度、安全审计等模块�
 
 #### 参与贡献
 
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
+欢迎大家参与共享，直接提交PR即可。如有任何问题，可以提交issue参与讨论。
