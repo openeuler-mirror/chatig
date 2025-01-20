@@ -62,7 +62,7 @@ appenders:
       roller:
         kind: fixed_window
         pattern: "/var/log/chatig/token.{}.log"
-        count: 5
+        count: 2
         base: 1
 
 loggers:
