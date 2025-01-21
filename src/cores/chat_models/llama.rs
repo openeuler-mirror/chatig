@@ -8,7 +8,7 @@ use bytes::Bytes;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
-use crate::cores::models::get_model;
+use crate::cores::control::services::ServiceManager;
 use crate::cores::chat_models::chat_controller::Completions;
 
 pub struct Llama{
@@ -19,13 +19,17 @@ pub struct Llama{
 impl Completions for Llama{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration 
-        let model = get_model(&self.model_name).await?;
-        let model = model.as_ref().ok_or_else(|| ErrorBadRequest(format!("Unsupported model: {}", &req_body.model)))?;
+        let service_manager = ServiceManager::default();
+        let service = service_manager.get_service_by_model(&self.model_name).await?;
+        let service = match service {
+            Some(service) => service,
+            None => return Err(ErrorBadRequest(format!("{} model is not supported", self.model_name))),
+        };
 
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true);
         let mut request_body = json!({
-            "model": model.model_name,
+            "model": service.model_name,
             "temperature": req_body.temperature.unwrap_or(0.3),
             "n": req_body.n.unwrap_or(1),
             "stream": stream,
@@ -51,7 +55,7 @@ impl Completions for Llama{
 
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(model.clone().request_url)
+        let response = match client.post(service.url)
             .header("Content-Type", "application/json")
             .json(&request_body)
             .send()
