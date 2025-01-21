@@ -10,6 +10,7 @@ use crate::cores::chat_models::qwen::Qwen;
 use crate::cores::chat_models::glm::GLM;
 use crate::utils::log::log_request;
 use crate::cores::chat_models::llama::Llama;
+use crate::cores::chat_models::bailian::Bailian;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
@@ -81,6 +82,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         "Qwen" => LLM::new(Box::new(Qwen {model_name: parts[1].to_string()})),
         "GLM" => LLM::new(Box::new(GLM {model_name: parts[1].to_string()})),
         "meta-llama" => LLM::new(Box::new(Llama {model_name: parts[1].to_string()})),
+        "Bailian" => LLM::new(Box::new(Bailian {})),
         _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", parts[0]))),
     };
 
