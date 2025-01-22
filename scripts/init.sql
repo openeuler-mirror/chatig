@@ -48,7 +48,8 @@ CREATE TABLE IF NOT EXISTS services (
     servicetype TEXT NOT NULL,
     status TEXT NOT NULL,
     url TEXT NOT NULL,
-    max_token BIGINT NOT NULL
+    model_name TEXT NOT NULL,
+    active_model TEXT NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS models_service (
