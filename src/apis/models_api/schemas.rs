@@ -117,10 +117,6 @@ pub struct ImageGenerationRequest {
 pub struct ImageGenerationResponse {
     pub created: u64,  // Timestamp of when the image was generated.
     pub data: Vec<ImageData>,
-    // #[allow(dead_code)]
-    // pub model: String,
-    // #[allow(dead_code)]
-    // pub usage: Usage,
 }
 
 // Image data struct, which is part of the ImageGenerationResponse.

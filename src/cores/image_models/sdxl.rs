@@ -4,8 +4,8 @@ use reqwest::Client;
 use async_trait::async_trait;
 
 use crate::apis::models_api::schemas::{ImageGenerationRequest, ImageGenerationResponse};
-use crate::configs::settings::load_server_config;
 use crate::cores::image_models::image_controller::ImageProvider;
+use crate::cores::control::services::ServiceManager;
 
 pub struct SdxlTurbo;
 
@@ -17,14 +17,21 @@ impl ImageProvider for SdxlTurbo {
         let client = Client::new();
 
         // 2. Construct the request body for the image generation API
-        let server_config = load_server_config().map_err(|err| format!("Failed to load server config: {}", err))?;
         let request_body = json!({
             "model": req_body.model,
             "prompt": prompt
         });
 
         // 3. Send the POST request
-        let response = match client.post(&server_config.images.get_image)
+        let service_manager = ServiceManager::default();
+        let service = service_manager.get_service_by_model(&req_body.model)
+            .await
+            .map_err(|err| format!("Failed to get service by model: {}", err))?;
+        let service = match service {
+            Some(service) => service,
+            None => return Err(format!("{} model is not supported", req_body.model)),
+        };
+        let response = match client.post(service.url)
             .header("Content-Type", "application/json")
             .json(&request_body)
             .send()
