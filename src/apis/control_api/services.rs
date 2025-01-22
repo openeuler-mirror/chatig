@@ -1,6 +1,8 @@
 use actix_web::{delete, error, get, post, put, web, Error, HttpResponse, Responder};
 use serde_json::json;
-use crate::cores::services::{ServiceConfig, ServiceManager};
+// use crate::cores::services::{ServiceConfig, ServiceManager};
+use crate::cores::control::services::ServiceManager;
+use crate::meta::services::traits::ServiceConfig;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(load_services)
@@ -11,9 +13,12 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
         .service(delete_service);
 }
 
+
+
 #[post("/v1/services/load")]
 pub async fn load_services() -> impl Responder {
-    match ServiceManager::load_services_table().await {
+    let service_manager = ServiceManager::default();
+    match service_manager.load_services_table().await {
         Ok(_) => HttpResponse::Ok().json(json!({
             "code": 200,
             "message": "Services loaded successfully from YAML.",
@@ -34,7 +39,8 @@ pub async fn load_services() -> impl Responder {
 async fn create_service(
     service: web::Json<ServiceConfig>,
 ) -> Result<impl Responder, Error> {
-    ServiceManager::create_service(&service.into_inner())
+    let service_manager = ServiceManager::default();
+    service_manager.create_service(&service.into_inner())
         .await
         .map(|_| HttpResponse::Created().json(json!({
             "code": 200,
@@ -54,7 +60,8 @@ async fn create_service(
 async fn get_service(
     id: web::Path<String>,
 ) -> Result<impl Responder, Error> {
-    ServiceManager::get_service(&id)
+    let service_manager = ServiceManager::default();
+    service_manager.get_service(&id)
         .await
         .map(|service| match service {
             Some(service) => HttpResponse::Ok().json(json!({
@@ -79,7 +86,8 @@ async fn get_service(
 
 #[get("/v1/services")]
 async fn get_all_services() -> Result<impl Responder, Error> {
-    ServiceManager::get_all_services()
+    let service_manager = ServiceManager::default();
+    service_manager.get_all_services()
         .await
         .map(|services| HttpResponse::Ok().json(json!({
             "code": 200,
@@ -103,7 +111,8 @@ async fn update_service(
     let mut updated_service = service.into_inner();
     updated_service.id = id.clone();
 
-    ServiceManager::update_service(&updated_service)
+    let service_manager = ServiceManager::default();
+    service_manager.update_service(&updated_service)
         .await
         .map(|rows_updated| {
             if rows_updated > 0 {
@@ -133,7 +142,8 @@ async fn update_service(
 async fn delete_service(
     id: web::Path<String>,
 ) -> Result<impl Responder, Error> {
-    ServiceManager::delete_service(&id)
+    let service_manager = ServiceManager::default();
+    service_manager.delete_service(&id)
         .await
         .map(|_| HttpResponse::Ok().json(json!({
             "code": 200,
