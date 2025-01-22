@@ -73,10 +73,28 @@ impl Config {
         } else {
             "src/configs/configs.yaml"
         };
-        let mut file = File::open(config_path).expect("Failed to open config file");
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).expect("Failed to read config file");
-        serde_yaml::from_str(&contents).expect("Failed to parse config file")
+        if metadata(config_path).is_ok() {
+            let mut file = File::open(config_path).expect("Failed to open config file");
+            let mut contents = String::new();
+            file.read_to_string(&mut contents).expect("Failed to read config file");
+            serde_yaml::from_str(&contents).expect("Failed to parse config file")
+        }else {
+            Config::default_config()
+        }
+    }
+
+    pub fn default_config() -> Self {
+        Config {
+            temp_docs_path: "/root/.chatig/data/temp_docs".to_string(),
+            port: 80,
+            database: "postgres://chatig:chatig@localhost/chatig".to_string(),
+            connection_num: 10,
+            database_type: "pgsql".to_string(),
+            rate_limit_tps: 1000,
+            rate_limit_bucket_capacity: 2000,
+            rate_limit_refill_interval: 100,
+            rate_limit_enbled: false,
+        }
     }
 }
 
