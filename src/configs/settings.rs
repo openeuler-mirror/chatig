@@ -60,6 +60,7 @@ pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> 
 
 // ---------------------------------------------- Config ----------------------------------------------
 #[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
 pub struct Config {
     pub temp_docs_path: String,
     pub port: u16,
@@ -72,24 +73,8 @@ pub struct Config {
     pub rate_limit_enbled: bool,
 }
 
-impl Config {
-    pub fn load_config() -> Config {
-        let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-            "/etc/chatig/configs.yaml"
-        } else {
-            "src/configs/configs.yaml"
-        };
-        if metadata(config_path).is_ok() {
-            let mut file = File::open(config_path).expect("Failed to open config file");
-            let mut contents = String::new();
-            file.read_to_string(&mut contents).expect("Failed to read config file");
-            serde_yaml::from_str(&contents).expect("Failed to parse config file")
-        }else {
-            Config::default_config()
-        }
-    }
-
-    pub fn default_config() -> Self {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             temp_docs_path: "/root/.chatig/data/temp_docs".to_string(),
             port: 80,
@@ -101,6 +86,21 @@ impl Config {
             rate_limit_refill_interval: 100,
             rate_limit_enbled: false,
         }
+    }
+}
+
+
+impl Config {
+    pub fn load_config() -> Config {
+        let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+            "/etc/chatig/configs.yaml"
+        } else {
+            "src/configs/configs.yaml"
+        };
+        let mut file = File::open(config_path).expect("Failed to open config file");
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).expect("Failed to read config file");
+        serde_yaml::from_str(&contents).expect("Failed to parse config file")
     }
 }
 
