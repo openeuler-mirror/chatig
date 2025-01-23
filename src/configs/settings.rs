@@ -60,6 +60,7 @@ pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> 
 
 // ---------------------------------------------- Config ----------------------------------------------
 #[derive(Debug, Deserialize, Clone)]
+#[serde(default)]
 pub struct Config {
     pub temp_docs_path: String,
     pub port: u16,
@@ -71,6 +72,23 @@ pub struct Config {
     pub rate_limit_refill_interval: u64,
     pub rate_limit_enbled: bool,
 }
+
+impl Default for Config {
+    fn default() -> Self {
+        Config {
+            temp_docs_path: "/root/.chatig/data/temp_docs".to_string(),
+            port: 80,
+            database: "postgres://chatig:chatig@localhost/chatig".to_string(),
+            connection_num: 10,
+            database_type: "pgsql".to_string(),
+            rate_limit_tps: 1000,
+            rate_limit_bucket_capacity: 2000,
+            rate_limit_refill_interval: 100,
+            rate_limit_enbled: false,
+        }
+    }
+}
+
 
 impl Config {
     pub fn load_config() -> Config {
