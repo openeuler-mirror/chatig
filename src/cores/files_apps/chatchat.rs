@@ -18,7 +18,8 @@ use crate::cores::files_apps::file_controller::UploadForm;
 
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::configs::settings::load_server_config;
-use crate::meta::files::{add_file_object, FileObject};
+use crate::meta::files::traits::File;
+use crate::cores::control::files::FileManager;
 
 
 pub struct ChatChatFile;
@@ -60,15 +61,16 @@ impl FileChatController for ChatChatFile {
             fs::rename(&file.file.path(), &file_path)?;
             
             // save file to pgsql
-            let file_object = FileObject {
+            let file_object = File {
                 object: file_path.to_str().unwrap().to_string(),
-                bytes: file.size as i32,
+                bytes: file.size as i64,
                 created_at: chrono::Utc::now().timestamp() as i64,
                 filename: file_name.clone(),
                 purpose: purpose.clone(),
-                id: 0,
+                id: format!("chatchat{}", chrono::Utc::now().timestamp()),
             };
-            add_file_object(file_object).await
+            let file_manager = FileManager::default();
+            file_manager.add_file_object(file_object).await
                 .map_err(|err| ErrorInternalServerError(format!("Failed to add file object: {}", err)))?;
         }
         
