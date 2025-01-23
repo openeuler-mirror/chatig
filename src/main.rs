@@ -4,7 +4,7 @@ use std::time::Duration;
 use std::{rc::Rc, fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use log4rs::init_file;
+use log4rs::config::{init_raw_config, RawConfig};
 
 mod apis;
 mod cores;
@@ -20,6 +20,7 @@ use crate::apis::control_api::invitation_code::generate_and_save_invitation_code
 use crate::middleware::api_key::ApiKeyCheck;
 use crate::middleware::rate_limit::RateLimitMiddleware;
 use crate::apis::api_doc::ApiDoc;
+use crate::utils::log::get_log_config;
 
 #[cfg(test)]
 mod test;
@@ -28,8 +29,11 @@ mod test;
 async fn main() -> std::io::Result<()> {
     let config = &*GLOBAL_CONFIG;
 
-    let config_path = format!("{}/src/configs/log4rs.yaml", env!("CARGO_MANIFEST_DIR"));
-    init_file(&config_path, Default::default()).unwrap();
+    // Get log config and init log
+    let log_config_content = get_log_config()?;
+    let log_config: RawConfig = serde_yaml::from_str(&log_config_content)
+        .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Failed to parse log config: {}", e)))?;
+    init_raw_config(log_config).unwrap();
 
     let db_pool = setup_database().await
         .map_err(|e| std::io::Error::new(std::io::ErrorKind::Other, format!("Database setup failed: {}", e)))?;
@@ -72,6 +76,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(rate_limiter.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
+            .configure(apis::models_api::image::configure)
             .configure(apis::funcs_api::file_chat::configure)
             .configure(apis::funcs_api::rag::configure)
             .configure(apis::control_api::models::configure)

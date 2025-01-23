@@ -1,6 +1,8 @@
 use actix_web::HttpRequest;
 use chrono::Local;
 use serde::{Deserialize, Serialize};
+use std::fs::File;
+use std::io::Read;
 
 // Log info for tokens
 #[derive(Deserialize, Serialize, Debug)]
@@ -21,6 +23,22 @@ pub struct FieldsInfo {
 pub struct TagsInfo {
     pub user_name: String,
     pub model_name: String,
+}
+
+// Get log config from config
+pub fn get_log_config() -> std::io::Result<String> {
+    let config_file_path = format!("{}/src/configs/configs.yaml", env!("CARGO_MANIFEST_DIR"));
+    let mut file = File::open(config_file_path)?;
+    let mut content = String::new();
+    file.read_to_string(&mut content)?;
+
+    let marker = "refresh_rate: 30 seconds";
+    if let Some(index) = content.find(marker) {
+        let start_index = index + marker.len();
+        Ok(content[start_index..].trim_start().to_string())
+    } else {
+        Ok(content)
+    }
 }
 
 // Function for access log and error log
