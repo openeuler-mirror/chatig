@@ -11,6 +11,7 @@ use crate::cores::chat_models::glm::GLM;
 use crate::utils::log::log_request;
 use crate::cores::chat_models::llama::Llama;
 use crate::cores::chat_models::bailian::Bailian;
+use crate::cores::chat_models::deepseek::DeepSeek;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(health)
@@ -83,6 +84,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         "GLM" => LLM::new(Box::new(GLM {model_name: parts[1].to_string()})),
         "meta-llama" => LLM::new(Box::new(Llama {model_name: parts[1].to_string()})),
         "Bailian" => LLM::new(Box::new(Bailian {})),
+        "deepseek-ai" => LLM::new(Box::new(DeepSeek {model_name: parts[1].to_string()})),
         _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", parts[0]))),
     };
 

@@ -194,7 +194,8 @@ pub async fn create_services_table(client: &Client) -> Result<(), Error> {
             servicetype TEXT NOT NULL,
             status TEXT NOT NULL,
             url TEXT NOT NULL,
-            max_token BIGINT NOT NULL
+            model_name TEXT NOT NULL,
+            active_model TEXT NOT NULL
         );
     "#;
 

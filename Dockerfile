@@ -3,7 +3,7 @@ FROM openeuler/openeuler:22.03-lts-sp4
 WORKDIR /app
 
 # Install gcc, openssl-devel, libffi-devel, and Rust
-RUN dnf install -y gcc openssl-devel libffi-devel
+RUN dnf install -y gcc openssl-devel libffi-devel postgresql-devel
 
 # Install Rust
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
