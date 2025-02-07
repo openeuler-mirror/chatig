@@ -3,3 +3,4 @@ pub mod qwen;
 pub mod glm;
 pub mod llama;
 pub mod bailian;
+pub mod deepseek;
