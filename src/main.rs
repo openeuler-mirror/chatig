@@ -47,8 +47,8 @@ async fn main() -> std::io::Result<()> {
     println!("Starting server on port {}", port);
 
     //Https set
-    let mut certs_file = BufReader::new(File::open("docs/https/server.crt").unwrap());
-    let mut key_file = BufReader::new(File::open("docs/https/server.key").unwrap());
+    let mut certs_file = BufReader::new(File::open("./docs/https/server.crt").unwrap());
+    let mut key_file = BufReader::new(File::open("./docs/https/server.key").unwrap());
 
     let tls_certs = rustls_pemfile::certs(&mut certs_file)
         .collect::<Result<Vec<_>, _>>()
