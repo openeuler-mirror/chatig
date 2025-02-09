@@ -42,7 +42,38 @@ host    all             all             127.0.0.1/32            md5
 host    all             all             ::1/128                 md5
 ```
 
+**（4）添加特定ip访问权限（可选）**
+
+1. 使用宿主机的内网 IP 地址
+
+确保 PostgreSQL 配置 (`pg_hba.conf`) 允许来自 Docker 容器的连接（即宿主机的内网 IP 地址）。
+
+- 在 `pg_hba.conf` 中添加类似如下规则：
+
+  ```bash
+host    chatig    chatig    192.128.0.168/32    md5
+  ```
+  
+  这条规则允许 IP 地址 `192.128.0.168` 连接 `chatig` 数据库，并使用 MD5 验证。
+
+- 在 Docker 容器内，使用 `psql` 或其他 PostgreSQL 客户端连接到宿主机的数据库：
+
+  ```bash
+  psql -h 192.128.0.168 -U chatig -d chatig
+  ```
+
+修改完 `pg_hba.conf` 后，需要重新加载 PostgreSQL 配置使其生效：
+
+```bash
+sudo systemctl reload postgresql
+```
+
+
+
+**（5）修改postgresql.conf配置**
+
 修改postgresql.conf，确保你已经启用了所有网络接口的监听（允许外部连接）。检查或添加：
+
 ```bash
 vim /var/lib/pgsql/data/postgresql.conf
 
