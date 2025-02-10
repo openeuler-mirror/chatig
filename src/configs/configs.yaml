@@ -21,6 +21,10 @@ rate_limit_tps: 1000
 rate_limit_bucket_capacity: 2000
 # refill/ms
 rate_limit_refill_interval: 100
+# auth
+auth_local_enabled: false
+auth_remote_enabled: false
+auth_remote_server: ""
 
 # Log config
 refresh_rate: 30 seconds
