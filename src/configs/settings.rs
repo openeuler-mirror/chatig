@@ -71,6 +71,9 @@ pub struct Config {
     pub rate_limit_bucket_capacity: usize,
     pub rate_limit_refill_interval: u64,
     pub rate_limit_enbled: bool,
+    pub auth_local_enabled: bool,
+    pub auth_remote_enabled: bool,
+    pub auth_remote_server: String,
 }
 
 impl Default for Config {
@@ -85,6 +88,9 @@ impl Default for Config {
             rate_limit_bucket_capacity: 2000,
             rate_limit_refill_interval: 100,
             rate_limit_enbled: false,
+            auth_local_enabled: false,
+            auth_remote_enabled: false,
+            auth_remote_server: "".to_string(),
         }
     }
 }

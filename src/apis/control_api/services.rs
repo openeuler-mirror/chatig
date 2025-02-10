@@ -3,17 +3,20 @@ use serde_json::json;
 
 use crate::cores::control::services::ServiceManager;
 use crate::meta::services::traits::ServiceConfig;
+use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(load_services)
-        .service(create_service)
-        .service(get_service)
-        .service(get_all_services)
-        .service(update_service)
-        .service(delete_service);
+    cfg.service(
+        web::scope("") 
+            .wrap(Auth4ManageMiddleware::new())  // 在这个作用域内应用中间件
+            .service(load_services)
+            .service(create_service)
+            .service(get_service)
+            .service(get_all_services)
+            .service(update_service)
+            .service(delete_service)
+    );
 }
-
-
 
 #[post("/v1/services/load")]
 pub async fn load_services() -> impl Responder {
