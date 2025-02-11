@@ -74,13 +74,13 @@ where
         // 检查本地缓存
         // let key = format!("{}:{}", req.headers().get("X-Api-Key").unwrap().to_str().unwrap(), req.match_info().get("model").unwrap());
         let cache_result = match user_key_header {
-            Some(ref key) => self.cache.lock().unwrap().check_cache(key),
+            Some(ref key) => self.cache.lock().unwrap().check_cache_manage(key),
             None => None,
         };
 
         if let Some(user_id) = cache_result {
             // 缓存命中，返回成功
-            println!("Cache result: {:?}", cache_result);
+            // println!("Cache result: {:?}", cache_result);
             let fut = self.service.call(req);
             return Box::pin(fut);
         }
@@ -103,7 +103,7 @@ where
                 match userkeys.check_userkey(&userkey).await {
                     Ok(true) => {
                         // 本地鉴权成功，缓存用户ID
-                        cache.lock().unwrap().set_cache(userkey.clone(), Duration::from_secs(3600));
+                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
 
                         return fut.await;
                     },
@@ -129,7 +129,7 @@ where
                 match response {
                     Ok(resp) if resp.status().is_success() => {
                         // 远程鉴权成功，缓存用户ID
-                        // self.cache.lock().unwrap().set_cache(&key, "user_id".to_string(), Duration::from_secs(3600));
+                        // self.cache.lock().unwrap().set_cache_manage(&key, "user_id".to_string(), Duration::from_secs(3600));
                         return fut.await;
                     }
                     _ => return Err(ErrorForbidden("Remote validation failed")),

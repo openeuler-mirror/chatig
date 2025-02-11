@@ -5,10 +5,15 @@ use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse};
 use crate::apis::schemas::ErrorResponse;
 use crate::cores::embedding_models::embedding_controller::EmbeddingProvider;
 use crate::cores::embedding_models::bge::Bge;
+use crate::middleware::auth4model::Auth4ModelMiddleware;
 
 // Configure the actix_web service routes.
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(v1_embeddings);
+    cfg.service(
+        web::scope("/v1/embeddings") 
+            .wrap(Auth4ModelMiddleware::new())  // 在这个作用域内应用中间件
+            .service(v1_embeddings)
+    );
 }
 
 // define an interface layer that calls the completions method of the large model
@@ -28,7 +33,7 @@ impl EMB {
 
 #[utoipa::path(
     post,  // 请求方法
-    path = "/v1/embeddings",  // 路径
+    path = "/v1/embeddings/embeddings",  // 路径
     request_body = EmbeddingRequest,
     responses(
         (status = 200, body = EmbeddingResponse),
@@ -38,7 +43,7 @@ impl EMB {
 )]
 
 // Handle the POST request for /v1/embeddings.
-#[post("/v1/embeddings")]
+#[post("/embeddings")]
 async fn v1_embeddings(req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
     // 1. Validate the required fields.
     if req_body.input.is_empty() || req_body.model.is_empty() {
