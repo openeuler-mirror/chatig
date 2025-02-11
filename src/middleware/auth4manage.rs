@@ -59,7 +59,7 @@ where
         let config = &*GLOBAL_CONFIG;
         let userkeys = self.userkeys.clone();
         let user_key_header = req.headers()
-            .get("X-User-Key")
+            .get("Authorization")
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
 

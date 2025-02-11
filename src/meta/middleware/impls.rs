@@ -22,7 +22,10 @@ impl UserKeysTrait for UserKeysImpl {
         let all_records = DBCrud::get_all::<UserKeysModels>("UserKeysModels").await?;
         let found = all_records
             .iter()
-            .any(|record| record.userkey == userkey && record.model == model);
+            .any(|record| 
+                (record.userkey == userkey && record.model == model) ||
+                (record.userkey == userkey && record.model == "all")
+            );
         Ok(found)
     }
 }
