@@ -17,6 +17,7 @@ use futures_core::Stream;
 use tokio::join;
 use serde_yaml::Value;
 use std::sync::Mutex;
+use log::error;
 
 use actix_web::error::PayloadError;
 // 引入 BoxedPayloadStream 定义
@@ -273,7 +274,11 @@ async fn query_and_consume(apikey: String, model: String) -> Result<bool, Error>
        .send()
        .await {
         Ok(resp) => resp,
-        Err(err) => return Err(actix_web::error::ErrorInternalServerError(format!("Request failed: {}", err))),
+        Err(err) => {
+            // 记录错误日志
+            error!(target: "error_log", "{}", err);
+            return Ok(true);
+        }
     };
 
     let body_text = match response.text().await {
@@ -346,7 +351,11 @@ pub async fn consume(apikey: String, model: String, tokens: u32) -> Result<Strin
        .send()
        .await {
         Ok(resp) => resp,
-        Err(err) => return Err(actix_web::error::ErrorInternalServerError(format!("Request failed: {}", err))),
+        Err(err) => {
+            // 记录错误日志
+            error!(target: "error_log", "{}", err);
+            return Ok("success".to_string());
+        }
     };
 
     let body_text = match response.text().await {
@@ -408,7 +417,11 @@ pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
         .send()
         .await {
          Ok(resp) => resp,
-         Err(err) => return Err(actix_web::error::ErrorInternalServerError(format!("Request failed: {}", err))),
+         Err(err) => {
+            // 记录错误日志
+            error!(target: "error_log", "{}", err);
+            return Ok(true);
+        }
      };
  
      let body_text = match response.text().await {
