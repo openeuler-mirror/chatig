@@ -8,14 +8,20 @@ use crate::apis::schemas::ErrorResponse;
 use crate::cores::chat_models::chat_controller::Completions;
 use crate::cores::chat_models::qwen::Qwen;
 use crate::cores::chat_models::glm::GLM;
+use crate::middleware::auth4model::Auth4ModelMiddleware;
 use crate::utils::log::log_request;
 use crate::cores::chat_models::llama::Llama;
 use crate::cores::chat_models::bailian::Bailian;
 use crate::cores::chat_models::deepseek::DeepSeek;
 
+
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(health)
-       .service(completions);
+    cfg.service(
+        web::scope("") 
+            .wrap(Auth4ModelMiddleware::new())  // 在这个作用域内应用中间件
+            .service(health)
+            .service(completions)
+    );
 }
 
 ///获取健康检查

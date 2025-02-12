@@ -72,7 +72,7 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
-            .wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
+            //.wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             .wrap(rate_limiter.clone())
             .configure(apis::models_api::chat::configure)
             .configure(apis::models_api::embeddings::configure)
@@ -87,7 +87,8 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::services::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
-    .bind_rustls_0_23(("0.0.0.0", port), tls_config)?
+    //.bind_rustls_0_23(("0.0.0.0", port), tls_config)?
+    .bind(("0.0.0.0", port))?
     .run()
     .await
 }
