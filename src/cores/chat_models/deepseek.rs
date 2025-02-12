@@ -13,6 +13,8 @@ use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::cores::control::services::ServiceManager;
 use crate::cores::chat_models::chat_controller::Completions;
 use crate::utils::log::{Tokens, FieldsInfo, TagsInfo};
+use crate::middleware::qos::consume;
+use crate::GLOBAL_CONFIG;
 
 pub struct DeepSeek{
     pub model_name: String,
@@ -20,7 +22,7 @@ pub struct DeepSeek{
 
 #[async_trait]
 impl Completions for DeepSeek {
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
         let service_manager = ServiceManager::default();
         let service = service_manager.get_service_by_model(&self.model_name).await?;
@@ -31,7 +33,7 @@ impl Completions for DeepSeek {
 
         // 2. Build the request body
         let stream = req_body.stream.unwrap_or(true);
-        let request_body = json!({
+        let mut request_body = json!({
             "model": service.model_name,
             "temperature": req_body.temperature.unwrap_or(0.3),
             "n": req_body.n.unwrap_or(1),
@@ -44,7 +46,18 @@ impl Completions for DeepSeek {
             "max_tokens": req_body.max_tokens,
             "messages": req_body.messages,
         });
-        
+
+        // Append stream-specific options if needed
+        if stream {
+            let mut stream_options = serde_json::Map::new();
+            stream_options.insert("include_usage".to_string(), json!("True"));
+            
+            // Convert base_body into a Map and add stream_options
+            if let Some(base_map) = request_body.as_object_mut() {
+                base_map.insert("stream_options".to_string(), Value::Object(stream_options));
+            }
+        }
+
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
         let response = match client.post(service.url)
@@ -59,10 +72,10 @@ impl Completions for DeepSeek {
         // 4. Return the response based on the request's streaming status
         if stream {
             // Handle streaming response requests
-            completions_response_stream(response).await
+            completions_response_stream(response, apikey, curl_mode).await
         } else {
             // handle non-streaming response requests
-            completions_response_non_stream(response).await
+            completions_response_non_stream(response, apikey, curl_mode).await
         }
     }
 }
@@ -70,7 +83,7 @@ impl Completions for DeepSeek {
 
 
 // Handle non-streaming response requests
-async fn completions_response_non_stream(response: Response) -> Result<HttpResponse, Error> {
+async fn completions_response_non_stream(response: Response, apikey: String, curl_mode: String) -> Result<HttpResponse, Error> {
 
     // 1. Parse the JSON response body into the KbChatResponse struct
     let response_text = response.text().await
@@ -127,12 +140,25 @@ async fn completions_response_non_stream(response: Response) -> Result<HttpRespo
     };
     let kafka_json = serde_json::to_string(&kafka).unwrap();
     info!(target: "token", "{}", kafka_json);
+
+    let config = &*GLOBAL_CONFIG;
+    let coil_enabled = config.coil_enabled;
+    if coil_enabled {
+        // 下述的model需要换成上述的chat_response.model；apikey需要传入
+        // let status_is_success = consume("sk-4XNwrsq6bS9KD11E6xkrKEItGBcR".to_string(), "deepseek-ai/DeepSeek-R1-Distill-Llama-8B".to_string(), chat_response.usage.total_tokens).await?;
+        let status_is_success = consume(apikey, curl_mode, chat_response.usage.total_tokens).await?;
+        if status_is_success == "success" {
+        } else {
+            return Err(ErrorInternalServerError("Failed to consume tokens"));
+        }
+    }
+
     Ok(HttpResponse::Ok().json(res))
 }
 
 
 // Handle streaming response requests
-async fn completions_response_stream(response: Response) -> Result<HttpResponse, Error> {
+async fn completions_response_stream(response: Response, apikey: String, curl_mode: String) -> Result<HttpResponse, Error> {
 
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream();
@@ -233,6 +259,20 @@ async fn completions_response_stream(response: Response) -> Result<HttpResponse,
                                     model_name: chat_response.model.to_string(),
                                 },
                             };
+
+                            let config = &*GLOBAL_CONFIG;
+                            let coil_enabled = config.coil_enabled;
+                            if coil_enabled {
+                                let status_is_success = consume(apikey.clone(), curl_mode.clone(), usage.total_tokens).await;
+                                match status_is_success {
+                                    Ok(status) if status == "success" => {}
+                                    _ => {
+                                        yield Err(format!("Failed to consume tokens"));
+                                        continue;
+                                    }
+                                }
+                            }
+                        
                             let kafka_json = serde_json::to_string(&kafka).unwrap();
                             info!(target: "token", "{}", kafka_json);
                             break;

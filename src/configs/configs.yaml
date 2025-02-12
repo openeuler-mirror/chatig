@@ -26,6 +26,10 @@ auth_local_enabled: false
 auth_remote_enabled: false
 auth_remote_server: ""
 
+# coil server
+coil_enabled: false
+coil_ip: "192.168.56.6:8090"
+
 # Log config
 refresh_rate: 30 seconds
 

@@ -14,7 +14,7 @@ pub struct Bailian;
 
 #[async_trait]
 impl Completions for Bailian{
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, _apikey: String, _curl_mode: String) -> Result<HttpResponse, Error> {
 
         // 1. Read the model's parameter configuration
         let (reqwest_url, model_name, api_key) = get_model_params(&req_body.model)?;
