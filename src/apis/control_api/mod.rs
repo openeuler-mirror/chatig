@@ -5,3 +5,4 @@ pub mod projects;
 pub mod invitation_code;
 pub mod schemas;
 pub mod services;
+pub mod model_limits;

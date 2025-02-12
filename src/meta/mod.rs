@@ -6,3 +6,4 @@ pub mod connection;
 pub mod services;
 pub mod models;
 pub mod middleware;
+pub mod qos;

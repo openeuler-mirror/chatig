@@ -17,7 +17,7 @@ pub struct GLM{
 
 #[async_trait]
 impl Completions for GLM{
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, _apikey: String, _curl_mode: String) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
         let service_manager = ServiceManager::default();
         let service = service_manager.get_service_by_model(&self.model_name).await?;

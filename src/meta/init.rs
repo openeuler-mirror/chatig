@@ -21,6 +21,7 @@ pub async fn setup_database() -> Result<Pool<PostgresConnectionManager<NoTls>>, 
     create_models_table(&mut client).await?;
     create_services_table(&mut client).await?;
     create_models_service_table(&mut client).await?;
+    create_model_limits_table(&client).await?;
 
     Ok(pool) 
 }
@@ -214,6 +215,19 @@ pub async fn create_models_service_table(client: &Client) -> Result<(), Error> {
         );
     "#;
 
+    client.execute(create_table_query, &[]).await?;
+    Ok(())
+}
+
+// Create the limits for models of each user
+async fn create_model_limits_table(client: &Client) -> Result<(), Error> {
+    let create_table_query = r#"
+        CREATE TABLE IF NOT EXISTS model_limits (
+            model_name TEXT PRIMARY KEY,
+            max_requests TEXT NOT NULL,
+            max_tokens TEXT NOT NULL
+        );
+    "#;
     client.execute(create_table_query, &[]).await?;
     Ok(())
 }
