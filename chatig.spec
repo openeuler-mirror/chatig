@@ -1,5 +1,5 @@
-Name:           chatig
-Version:        1.0
+Name:           cuig
+Version:        %{version}
 Release:        1%{?dist}
 Summary:        Universal API
 
