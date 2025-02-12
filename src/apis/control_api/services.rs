@@ -7,7 +7,7 @@ use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("") 
+        web::scope("/v1/services") 
             .wrap(Auth4ManageMiddleware::new())  // 在这个作用域内应用中间件
             .service(load_services)
             .service(create_service)
@@ -18,7 +18,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     );
 }
 
-#[post("/v1/services/load")]
+#[post("/load")]
 pub async fn load_services() -> impl Responder {
     let service_manager = ServiceManager::default();
     match service_manager.load_services_table().await {
@@ -38,7 +38,7 @@ pub async fn load_services() -> impl Responder {
     }
 }
 
-#[post("/v1/services")]
+#[post("")]
 async fn create_service(
     service: web::Json<ServiceConfig>,
 ) -> Result<impl Responder, Error> {
@@ -59,7 +59,7 @@ async fn create_service(
         })
 }
 
-#[get("/v1/services/{id}")]
+#[get("/{id}")]
 async fn get_service(
     id: web::Path<String>,
 ) -> Result<impl Responder, Error> {
@@ -87,7 +87,7 @@ async fn get_service(
         })
 }
 
-#[get("/v1/services")]
+#[get("")]
 async fn get_all_services() -> Result<impl Responder, Error> {
     let service_manager = ServiceManager::default();
     service_manager.get_all_services()
@@ -106,7 +106,7 @@ async fn get_all_services() -> Result<impl Responder, Error> {
         })
 }
 
-#[put("/v1/services/{id}")]
+#[put("/{id}")]
 async fn update_service(
     id: web::Path<String>,
     service: web::Json<ServiceConfig>,
@@ -141,7 +141,7 @@ async fn update_service(
         })
 }
 
-#[delete("/v1/services/{id}")]
+#[delete("/{id}")]
 async fn delete_service(
     id: web::Path<String>,
 ) -> Result<impl Responder, Error> {

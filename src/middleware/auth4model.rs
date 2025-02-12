@@ -1,21 +1,25 @@
 use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::{ErrorBadRequest, ErrorInternalServerError}, Error, HttpMessage};
-use std::{sync::Arc, task::{Context, Poll}};
+use std::{sync::{Arc, Mutex}, task::{Context, Poll}};
 use futures::{future::{ok, LocalBoxFuture, Ready}, StreamExt};
 use actix_web::error::{ErrorUnauthorized, ErrorForbidden};
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
+use crate::middleware::auth_cache::AuthCache;
 use serde_json::Value;
+use std::time::Duration;
 
 #[derive(Clone)]
 pub struct Auth4ModelMiddleware {
-    userkeys: Arc<dyn UserKeysTrait>, 
+    userkeys: Arc<dyn UserKeysTrait>,
+    cache: Arc<Mutex<AuthCache>>,
 }
 
 impl Auth4ModelMiddleware {
     pub fn new() -> Self {
         let userkeys = Arc::new(UserKeysImpl);
-        Self { userkeys }
+        let cache = Arc::new(Mutex::new(AuthCache::new()));
+        Self { userkeys, cache }
     }
 }
 
@@ -34,6 +38,7 @@ where
         ok(Auth4ModelAuthMiddleware {
             service: Arc::new(service),
             userkeys: self.userkeys.clone(),
+            cache: self.cache.clone(),
         })
     }
 }
@@ -41,6 +46,7 @@ where
 pub struct Auth4ModelAuthMiddleware<S> {
     service: Arc<S>,
     userkeys: Arc<dyn UserKeysTrait>,
+    cache: Arc<Mutex<AuthCache>>,
 }
 
 impl<S, B> Service<ServiceRequest> for Auth4ModelAuthMiddleware<S>
@@ -65,6 +71,28 @@ where
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
 
+        let app_key = req.headers()
+            .get("app_key")
+            .and_then(|hv| hv.to_str().ok())
+            .map(|s| s.to_string());
+
+        let model_name = req.match_info().get("model").map(|m| m.to_string());
+
+        // 克隆缓存以便在闭包中使用
+        let cache = self.cache.clone();
+        // 构造缓存的key
+        let cache_key = format!("{}:{}:{}", user_key_header.clone().unwrap_or_default(), app_key.clone().unwrap_or_default(), model_name.unwrap_or_default());
+
+        // 检查缓存
+        let cache_result = self.cache.lock().unwrap().check_cache_model(&cache_key);
+
+        if let Some(user_id) = cache_result {
+            // 缓存命中，返回成功
+            println!("Cache hit for user_id: {:?}", user_id);
+            let fut = self.service.call(req);
+            return Box::pin(fut);
+        }
+
         Box::pin(async move {
             let mut body = actix_web::web::BytesMut::new();
             while let Some(chunk) = req.take_payload().next().await {
@@ -84,38 +112,78 @@ where
                 return service.call(req).await;
             }
 
+            // 如果没有启用鉴权，直接继续请求
+            if !config.auth_local_enabled && !config.auth_remote_enabled {
+                return service.call(req).await;
+            }
+
             let userkey = match user_key_header {
                 Some(s) => s,
                 None => return Err(ErrorUnauthorized("Missing userkey header")),
             };
 
-            match userkeys.check_userkey(&userkey).await {
-                Ok(true) => {
-                if let Some(model_value) = model {
-                    match userkeys.check_userkey_model(&userkey, &model_value).await {
-                        Ok(true) => {
-                            service.call(req).await
-                        }
-                        Ok(false) => {
-                            Err(ErrorForbidden("Invalid userkey and model combination"))
-                        }
-                        Err(err) => {
-                            eprintln!("check_userkey_model error: {}", err);
-                            Err(ErrorInternalServerError("check_userkey_model error"))
+            // 如果启用了本地鉴权
+            if config.auth_local_enabled {
+                match userkeys.check_userkey(&userkey).await {
+                    Ok(true) => {
+                        if let Some(model_value) = model.clone() {
+                            match userkeys.check_userkey_model(&userkey, &model_value).await {
+                                Ok(true) => {
+                                    return service.call(req).await;
+                                }
+                                Ok(false) => {
+                                    return Err(ErrorForbidden("Invalid userkey and model combination"));
+                                }
+                                Err(err) => {
+                                    eprintln!("check_userkey_model error: {}", err);
+                                    return Err(ErrorInternalServerError("check_userkey_model error"));
+                                }
+                            }
+                        } else {
+                            return Err(ErrorBadRequest("Missing model info"));
                         }
                     }
-                } else {
-                        Err(ErrorBadRequest("Missing model info"))
+                    Ok(false) => {
+                        return Err(ErrorForbidden("Invalid userkey"));
                     }
-                } 
-                Ok(false) => {
-                    Err(ErrorForbidden("Invalid userkey"))
-                }
-                Err(err) => {
-                    eprintln!("check_userkey error: {}", err);
-                    Err(ErrorInternalServerError("check_userkey error"))
+                    Err(err) => {
+                        eprintln!("check_userkey error: {}", err);
+                        return Err(ErrorInternalServerError("check_userkey error"));
+                    }
                 }
             }
+
+             // 如果启用了远程鉴权
+             if config.auth_remote_enabled {
+                let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
+                let client = reqwest::Client::new();
+                let response = client.post(&url)
+                    .json(&serde_json::json!({
+                        "apiKey": userkey.clone(),
+                        "appKey": app_key.clone(),
+                        "modelName": model.unwrap_or_default(),
+                        // "cloudRegonId": config.cloud_region_id
+                    }))
+                    .send()
+                    .await;
+
+                match response {
+                    Ok(resp) if resp.status().is_success() => {
+                        // 获取远程校验通过后的用户ID，缓存它
+                        if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
+                            cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
+                        }
+                        
+                        return service.call(req).await;
+                    }
+                    _ => {
+                        eprintln!("Remote check failed for userkey: {}", userkey);
+                        return Err(ErrorForbidden("Remote validation failed"));
+                    }
+                }
+            }
+
+            Err(ErrorForbidden("Authentication failed"))
         })
     }
 }

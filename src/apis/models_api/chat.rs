@@ -17,7 +17,7 @@ use crate::cores::chat_models::deepseek::DeepSeek;
 
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(
-        web::scope("") 
+        web::scope("/v1/chat") 
             .wrap(Auth4ModelMiddleware::new())  // 在这个作用域内应用中间件
             .service(health)
             .service(completions)
@@ -68,7 +68,7 @@ impl LLM {
     )  // 响应内容
 )]
 
-#[post("/v1/chat/completions")]
+#[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
