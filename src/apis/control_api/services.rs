@@ -1,20 +1,21 @@
 use actix_web::{delete, error, get, post, put, web, Error, HttpResponse, Responder};
 use serde_json::json;
+use std::sync::Arc;
 
 use crate::cores::control::services::ServiceManager;
 use crate::meta::services::traits::ServiceConfig;
 use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
-pub fn configure(cfg: &mut web::ServiceConfig) {
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageMiddleware>) {
     cfg.service(
-        web::scope("/v1/services") 
-            .wrap(Auth4ManageMiddleware::new())  // 在这个作用域内应用中间件
+        web::scope("/v1/services")
+            .wrap(auth_middleware) // 应用中间件
             .service(load_services)
             .service(create_service)
             .service(get_service)
             .service(get_all_services)
             .service(update_service)
-            .service(delete_service)
+            .service(delete_service),
     );
 }
 

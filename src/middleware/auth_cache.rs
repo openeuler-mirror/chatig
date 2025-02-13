@@ -17,9 +17,9 @@ impl AuthCache {
 
     // 检查manage缓存是否有效
     pub fn check_cache_manage(&self, key: &str) -> Option<()> {
+        // println!("Current cache_manage content: {:?}", self.cache_manage);
         if let Some((_, expire_time)) = self.cache_manage.get(key) {  // 解包元组
             if Instant::now() < *expire_time {
-                // println!("Cache hit for key: {}", key);
                 return Some(());  // 缓存有效
             }
         }
@@ -34,9 +34,9 @@ impl AuthCache {
 
     // 检查model缓存是否有效
     pub fn check_cache_model(&self, key: &str) -> Option<String> {
+        // println!("Current cache_manage content: {:?}", self.cache_model);
         if let Some((user_id, expire_time)) = self.cache_model.get(key) {
             if Instant::now() < *expire_time {
-                // println!("Cache hit for key");
                 return Some(user_id.clone());
             }
         }

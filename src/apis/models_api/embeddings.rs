@@ -1,5 +1,6 @@
 use actix_web::{post, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorBadRequest;
+use std::sync::Arc;
 
 use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse};
 use crate::apis::schemas::ErrorResponse;
@@ -8,10 +9,10 @@ use crate::cores::embedding_models::bge::Bge;
 use crate::middleware::auth4model::Auth4ModelMiddleware;
 
 // Configure the actix_web service routes.
-pub fn configure(cfg: &mut web::ServiceConfig) {
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>) {
     cfg.service(
         web::scope("/v1/embeddings") 
-            .wrap(Auth4ModelMiddleware::new())  // 在这个作用域内应用中间件
+            .wrap(auth_middleware)  // 在这个作用域内应用中间件
             .service(v1_embeddings)
     );
 }

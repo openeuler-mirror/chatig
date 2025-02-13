@@ -119,17 +119,25 @@ where
 
             // 远程鉴权逻辑
             if config.auth_remote_enabled {
-                let url = format!("{}/validate", config.auth_remote_server);
+                let userkey = match user_key_header {
+                    Some(s) => s,
+                    None => return Err(ErrorUnauthorized("Missing userkey header")),
+                };
+
+                let url = format!("{}/v1/apiInfo/exist", config.auth_remote_server);
                 let client = reqwest::Client::new();
                 let response = client.post(&url)
-                    .header("X-User-Key", user_key_header.unwrap_or_default())
+                    .json(&serde_json::json!({
+                        "apiKey": userkey.clone()
+                    }))
                     .send()
                     .await;
 
+                // println!("response {:?}", response);
                 match response {
                     Ok(resp) if resp.status().is_success() => {
                         // 远程鉴权成功，缓存用户ID
-                        // self.cache.lock().unwrap().set_cache_manage(&key, "user_id".to_string(), Duration::from_secs(3600));
+                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
                         return fut.await;
                     }
                     _ => return Err(ErrorForbidden("Remote validation failed")),

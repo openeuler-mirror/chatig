@@ -5,6 +5,9 @@ use std::{fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use log4rs::config::{init_raw_config, RawConfig};
+use std::sync::Arc;
+use crate::middleware::auth4manage::Auth4ManageMiddleware;
+use crate::middleware::auth4model::Auth4ModelMiddleware;
 
 mod apis;
 mod cores;
@@ -61,6 +64,9 @@ async fn main() -> std::io::Result<()> {
         .unwrap();
 
     let rate_limiter = RateLimitMiddleware::new(config.rate_limit_tps, config.rate_limit_bucket_capacity, Duration::from_millis(config.rate_limit_refill_interval));
+    let auth_manage = Arc::new(Auth4ManageMiddleware::new());
+    let auth_model = Arc::new(Auth4ModelMiddleware::new());
+
     // Start the HTTP server
     HttpServer::new(move || {
         let cors = Cors::default()
@@ -74,7 +80,8 @@ async fn main() -> std::io::Result<()> {
             //.wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             .wrap(rate_limiter.clone())
             .configure(apis::models_api::chat::configure)
-            .configure(apis::models_api::embeddings::configure)
+            // .configure(apis::models_api::embeddings::configure)
+            .configure(|cfg| apis::models_api::embeddings::configure(cfg, auth_model.clone()))
             .configure(apis::models_api::image::configure)
             .configure(apis::funcs_api::file_chat::configure)
             .configure(apis::funcs_api::rag::configure)
@@ -83,7 +90,7 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::projects::configure)
             .configure(apis::control_api::invitation_code::configure)
             .configure(apis::control_api::users::configure)
-            .configure(apis::control_api::services::configure)
+            .configure(|cfg| apis::control_api::services::configure(cfg, auth_manage.clone()))
             .configure(apis::control_api::model_limits::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 

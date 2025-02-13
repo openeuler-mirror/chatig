@@ -71,28 +71,12 @@ where
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
 
-        let app_key = req.headers()
-            .get("app_key")
+        let app_key_header = req.headers()
+            .get("appKey")
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
 
-        let model_name = req.match_info().get("model").map(|m| m.to_string());
-
-        // 克隆缓存以便在闭包中使用
         let cache = self.cache.clone();
-        // 构造缓存的key
-        let cache_key = format!("{}:{}:{}", user_key_header.clone().unwrap_or_default(), app_key.clone().unwrap_or_default(), model_name.unwrap_or_default());
-
-        // 检查缓存
-        let cache_result = self.cache.lock().unwrap().check_cache_model(&cache_key);
-
-        if let Some(user_id) = cache_result {
-            // 缓存命中，返回成功
-            println!("Cache hit for user_id: {:?}", user_id);
-            let fut = self.service.call(req);
-            return Box::pin(fut);
-        }
-
         Box::pin(async move {
             let mut body = actix_web::web::BytesMut::new();
             while let Some(chunk) = req.take_payload().next().await {
@@ -108,9 +92,6 @@ where
             let (_, mut new_payload) = actix_http::h1::Payload::create(true);
             new_payload.unread_data(body.freeze());
             req.set_payload(actix_web::dev::Payload::from(new_payload));
-            if !config.auth_local_enabled {
-                return service.call(req).await;
-            }
 
             // 如果没有启用鉴权，直接继续请求
             if !config.auth_local_enabled && !config.auth_remote_enabled {
@@ -121,6 +102,29 @@ where
                 Some(s) => s,
                 None => return Err(ErrorUnauthorized("Missing userkey header")),
             };
+
+            let app_key = match app_key_header {
+                Some(s) => s,
+                None => return Err(ErrorUnauthorized("Missing app_key header")),
+            };
+
+            let model_name = match model.clone() {
+                Some(s) => s,
+                None => return Err(ErrorUnauthorized("Missing model header")),
+            };
+
+            // 构造缓存的key
+            let cache_key = format!("{}:{}:{}", userkey.clone(), app_key.clone(), model_name.clone());
+
+            // 检查缓存
+            // println!("cache_key: {}", cache_key);
+            let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
+
+            if let Some(user_id) = cache_result {
+                // 缓存命中，返回成功
+                // println!("Cache hit for user_id: {:?}", user_id);
+                return service.call(req).await;
+            }
 
             // 如果启用了本地鉴权
             if config.auth_local_enabled {
@@ -161,8 +165,8 @@ where
                     .json(&serde_json::json!({
                         "apiKey": userkey.clone(),
                         "appKey": app_key.clone(),
-                        "modelName": model.unwrap_or_default(),
-                        // "cloudRegonId": config.cloud_region_id
+                        "modelName": model_name.clone(),
+                        "cloudRegionId": "1111".to_string()
                     }))
                     .send()
                     .await;
@@ -177,7 +181,6 @@ where
                         return service.call(req).await;
                     }
                     _ => {
-                        eprintln!("Remote check failed for userkey: {}", userkey);
                         return Err(ErrorForbidden("Remote validation failed"));
                     }
                 }
