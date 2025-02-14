@@ -25,6 +25,8 @@ rate_limit_refill_interval: 100
 auth_local_enabled: false
 auth_remote_enabled: false
 auth_remote_server: ""
+# cloud region
+cloud_region_id: ""
 
 # coil server
 coil_enabled: false
