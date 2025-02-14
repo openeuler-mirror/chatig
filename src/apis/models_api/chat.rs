@@ -60,8 +60,8 @@ impl LLM {
         LLM { model }
     }
 
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String) -> Result<HttpResponse, Error> {
-        self.model.completions(req_body, apikey, curl_mode).await
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String, appkey: String) -> Result<HttpResponse, Error> {
+        self.model.completions(req_body, apikey, curl_mode, appkey).await
     }
 }
 
@@ -168,30 +168,16 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     };
 
     // 4. Send the request to the model service
-    if userid == "" {
-        let response = model.completions(req_body, apikey, curl_model).await;
-        match response {
-            Ok(resp) => {
-                info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
-                Ok(resp)
-            }
-            Err(err) => {
-                error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
-                Err(err)
-            }
-        }  
-    } else {
-        let response = model.completions(req_body, userid, curl_model).await;
-        match response {
-            Ok(resp) => {
-                info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
-                Ok(resp)
-            }
-            Err(err) => {
-                error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
-                Err(err)
-            }
-        }  
-    }
+    let response = model.completions(req_body, userid, curl_model, appkey).await;
+    match response {
+        Ok(resp) => {
+            info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
+            Ok(resp)
+        }
+        Err(err) => {
+            error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
+            Err(err)
+        }
+    } 
 
 }

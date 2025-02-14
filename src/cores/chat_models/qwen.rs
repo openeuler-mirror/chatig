@@ -7,12 +7,12 @@ use futures::StreamExt;
 use bytes::Bytes;
 use chrono::Utc;
 use log::info;
+use chrono::DateTime;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::schemas::{CompletionsResponse, CompletionsStreamResponse};
 use crate::cores::control::services::ServiceManager;
 use crate::cores::chat_models::chat_controller::Completions;
-use crate::utils::log::{Tokens, FieldsInfo, TagsInfo};
 use crate::GLOBAL_CONFIG;
 use crate::middleware::qos::consume;
 
@@ -23,7 +23,7 @@ pub struct Qwen{
 
 #[async_trait]
 impl Completions for Qwen{
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, userid: String, curl_mode: String) -> Result<HttpResponse, Error> {
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, userid: String, curl_mode: String, appkey: String) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
         let service_manager = ServiceManager::default();
         let service = service_manager.get_service_by_model(&self.model_name).await?;
@@ -59,6 +59,7 @@ impl Completions for Qwen{
             }
         }
 
+        let start_time = Utc::now();
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
         let response = match client.post(service.url)
@@ -73,17 +74,17 @@ impl Completions for Qwen{
         // 4. Return the response based on the request's streaming status
         if stream {
             // Handle streaming response requests
-            completions_response_stream(response, userid, curl_mode).await
+            completions_response_stream(response, userid, curl_mode, appkey, start_time).await
         } else {
             // handle non-streaming response requests
-            completions_response_non_stream(response, userid, curl_mode).await
+            completions_response_non_stream(response, userid, curl_mode, appkey, start_time).await
         }
     }
 }
 
 
 // Handle non-streaming response requests
-async fn completions_response_non_stream(response: Response, userid: String, curl_mode: String) -> Result<HttpResponse, Error> {
+async fn completions_response_non_stream(response: Response, userid: String, curl_mode: String, appkey: String, start_time: chrono::DateTime<Utc>) -> Result<HttpResponse, Error> {
 
     // 1. Parse the JSON response body into the KbChatResponse struct
     let response_text = response.text().await
@@ -125,20 +126,23 @@ async fn completions_response_non_stream(response: Response, userid: String, cur
       }
     });
 
-    let timestamp = Utc::now().timestamp();
-    let kafka = Tokens {
-        timestamp: timestamp,
-        fields: FieldsInfo {
-            completion_tokens: chat_response.usage.prompt_tokens,
-            prompt_tokens: chat_response.usage.completion_tokens,
-            total_tokens: chat_response.usage.total_tokens,
-        },
-        tags: TagsInfo {
-            user_name: userid.clone(),
-            model_name: chat_response.model.to_string(),
-        },
-    };
-    let kafka_json = serde_json::to_string(&kafka).unwrap();
+    let config = &*GLOBAL_CONFIG;
+    let utc_time: DateTime<Utc> = Utc::now();
+    let end_time = Utc::now();
+    let data: Value = json!({
+        "userID": userid,
+        "cloudRegionName": config.cloud_region_name,
+        "cloudRegionId": config.cloud_region_id,
+        "modelName": curl_mode,
+        "appKey": appkey,
+        "startTime": start_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+        "endTime": end_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+        "totalTokens": chat_response.usage.total_tokens,
+        "completionTokens": chat_response.usage.completion_tokens,
+        "promptTokens": chat_response.usage.prompt_tokens,
+        "time": utc_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+    });
+    let kafka_json: String = serde_json::to_string(&data).unwrap();
     info!(target: "token", "{}", kafka_json);
 
     let config = &*GLOBAL_CONFIG;
@@ -158,7 +162,7 @@ async fn completions_response_non_stream(response: Response, userid: String, cur
 
 
 // Handle streaming response requests
-async fn completions_response_stream(response: Response, userid: String, curl_mode: String) -> Result<HttpResponse, Error> {
+async fn completions_response_stream(response: Response, userid: String, curl_mode: String, appkey: String, start_time: chrono::DateTime<Utc>) -> Result<HttpResponse, Error> {
 
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream();
@@ -245,35 +249,24 @@ async fn completions_response_stream(response: Response, userid: String, curl_mo
 
                     // If usage is exist
                     match &chat_response.usage {
-                        Some(usage) => {
-                            let timestamp = Utc::now().timestamp();
-                            let kafka = Tokens {
-                                timestamp: timestamp,
-                                fields: FieldsInfo {
-                                    completion_tokens: usage.prompt_tokens,
-                                    prompt_tokens: usage.completion_tokens,
-                                    total_tokens: usage.total_tokens,
-                                },
-                                tags: TagsInfo {
-                                    user_name: userid.clone(),
-                                    model_name: chat_response.model.to_string(),
-                                },
-                            };
-
+                        Some(usage) => { 
                             let config = &*GLOBAL_CONFIG;
-                            let coil_enabled = config.coil_enabled;
-                            if coil_enabled {
-                                let status_is_success = consume(userid.clone(), curl_mode.clone(), usage.total_tokens).await;
-                                match status_is_success {
-                                    Ok(status) if status == "success" => {}
-                                    _ => {
-                                        yield Err(format!("Failed to consume tokens"));
-                                        continue;
-                                    }
-                                }
-                            }
-
-                            let kafka_json = serde_json::to_string(&kafka).unwrap();
+                            let utc_time: DateTime<Utc> = Utc::now();
+                            let end_time = Utc::now();
+                            let data: Value = json!({
+                                "userID": userid,
+                                "cloudRegionName": config.cloud_region_name,
+                                "cloudRegionId": config.cloud_region_id,
+                                "modelName": curl_mode,
+                                "appKey": appkey,
+                                "startTime": start_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                                "endTime": end_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                                "totalTokens": usage.total_tokens,
+                                "completionTokens": usage.completion_tokens,
+                                "promptTokens": usage.prompt_tokens,
+                                "time": utc_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                            });
+                            let kafka_json: String = serde_json::to_string(&data).unwrap();
                             info!(target: "token", "{}", kafka_json);
                             break;
                         },

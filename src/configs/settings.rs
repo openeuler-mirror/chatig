@@ -77,6 +77,7 @@ pub struct Config {
     pub coil_enabled: bool,
     pub coil_ip: String,
     pub cloud_region_id: String,
+    pub cloud_region_name: String,
 }
 
 impl Default for Config {
@@ -97,6 +98,7 @@ impl Default for Config {
             coil_enabled: false,
             coil_ip: "".to_string(),
             cloud_region_id: "".to_string(),
+            cloud_region_name: "".to_string(),
         }
     }
 }

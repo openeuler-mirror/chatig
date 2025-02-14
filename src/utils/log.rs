@@ -3,6 +3,7 @@ use chrono::Local;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::io::Read;
+use std::fs::metadata;
 
 // Log info for tokens
 #[derive(Deserialize, Serialize, Debug)]
@@ -27,7 +28,11 @@ pub struct TagsInfo {
 
 // Get log config from config
 pub fn get_log_config() -> std::io::Result<String> {
-    let config_file_path = format!("{}/src/configs/configs.yaml", env!("CARGO_MANIFEST_DIR"));
+    let config_file_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
+        "/etc/chatig/configs.yaml"
+    } else {
+        "src/configs/configs.yaml"
+    };
     let mut file = File::open(config_file_path)?;
     let mut content = String::new();
     file.read_to_string(&mut content)?;
