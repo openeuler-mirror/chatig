@@ -2,8 +2,9 @@ use actix_web::{get, post, web, Error, HttpResponse, Responder, HttpRequest};
 use actix_web::error::ErrorBadRequest;
 use log::{info, error};
 use serde_yaml::Value;
-use std::time::Duration;
 use std::sync::{Mutex, Arc};
+use actix_web::error::ErrorInternalServerError;
+use std::time::Duration;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
@@ -59,8 +60,8 @@ impl LLM {
         LLM { model }
     }
 
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String) -> Result<HttpResponse, Error> {
-        self.model.completions(req_body, apikey, curl_mode).await
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String, appkey: String) -> Result<HttpResponse, Error> {
+        self.model.completions(req_body, apikey, curl_mode, appkey).await
     }
 }
 
@@ -78,7 +79,7 @@ impl LLM {
 #[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
 
-    // 获取 Authorization 头部的值，应该传入到具体的模型函数中
+    // 获取apikey, appkey, model
     let auth_header = req.headers().get("Authorization");
     let apikey = match auth_header {
         Some(header_value) => {
@@ -94,19 +95,19 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         }
     };
 
-    //  缓存 ///////////////////////////////////////////
-    // 获取 appkey 头部的值
     let appkey_header = req.headers().get("app_key");
     let appkey = match appkey_header {
         Some(header_value) => {
             header_value.to_str().map_err(|_| ErrorBadRequest("Invalid app_key header"))?.to_string()
         }
         None => {
-            // 没有app_key就没有，不影响
-            "".to_string()
+            return Err(ErrorBadRequest("App_key is missing"));
         }
     };
 
+    let curl_model = req_body.model.clone();
+
+    // 缓存获取user id
     let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
     let cache_key = format!("{}{}{}", apikey, appkey, req_body.model.clone());
     let mut userid = "".to_string();
@@ -114,6 +115,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         userid = user_id;
     } 
 
+    // 获取user id
     let config = &*GLOBAL_CONFIG;
     if userid == "" {
         let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
@@ -123,7 +125,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
                 "apiKey": apikey.clone(),
                 "appKey": appkey.clone(),
                 "modelName": req_body.model.clone(),
-                // "cloudRegonId": config.cloud_region_id
+                "cloudRegionId": config.cloud_region_id
             }))
             .send()
             .await;
@@ -136,14 +138,10 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
                 }
             }
             _ => {
-                // 只获取值，不校验返回错误
+                return Err(ErrorInternalServerError("Get remote user id error"));
             }
         }
     }
-    /////////////////////////////////////////////////////////////
-
-    // 打印获取到的令牌，方便调试
-    let curl_model = req_body.model.clone();
 
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
@@ -170,30 +168,16 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     };
 
     // 4. Send the request to the model service
-    if userid == "" {
-        let response = model.completions(req_body, apikey, curl_model).await;
-        match response {
-            Ok(resp) => {
-                info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
-                Ok(resp)
-            }
-            Err(err) => {
-                error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
-                Err(err)
-            }
-        }  
-    } else {
-        let response = model.completions(req_body, userid, curl_model).await;
-        match response {
-            Ok(resp) => {
-                info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
-                Ok(resp)
-            }
-            Err(err) => {
-                error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
-                Err(err)
-            }
-        }  
-    }
+    let response = model.completions(req_body, userid, curl_model, appkey).await;
+    match response {
+        Ok(resp) => {
+            info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
+            Ok(resp)
+        }
+        Err(err) => {
+            error!(target: "error_log", "{}", log_request(req.clone(), err.as_response_error().status_code().as_u16(), Some(&format!("{}", err))).await.unwrap());
+            Err(err)
+        }
+    } 
 
 }

@@ -18,6 +18,7 @@ use tokio::join;
 use serde_yaml::Value;
 use std::sync::Mutex;
 use log::error;
+use actix_web::error::ErrorInternalServerError;
 
 use actix_web::error::PayloadError;
 // 引入 BoxedPayloadStream 定义
@@ -87,14 +88,12 @@ where
     }
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
-        // 新增逻辑 ///////////////////////////////
+        // 获取appkey, apikey
         let appkey = req.headers()
             .get("app_key")
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
         let app_key = appkey.clone().unwrap_or_default();
-
-        // 结束 /////////////////////////////////////////
 
         let api_key = req
            .headers()
@@ -113,9 +112,7 @@ where
                 })?;
                 body.extend_from_slice(&chunk);
             }
-            // 克隆 body 的内容
             let body_clone = body.clone();
-            // 将 serde_json::Error 转换为 actix_web::Error
             let chat_request = serde_json::from_slice::<ChatCompletionRequest>(&body_clone)
                .map_err(|e| ErrorBadRequest(format!("Failed to parse JSON: {}", e)))?;
             Ok((chat_request, body_clone))
@@ -130,9 +127,8 @@ where
         let config = &*GLOBAL_CONFIG;
         let coil_enabled = config.coil_enabled;
 
-        // 创建 QosAuthCache 实例并使用 Mutex 包装 /////////////////////////////////////////
+        // 创建 QosAuthCache 实例并使用 Mutex 包装
         let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
-        //////////////////////////////////////////////////////////////////////
 
         let fut = async move {
             let (chat_request, body_clone) = read_payload_fut.await?;
@@ -145,16 +141,14 @@ where
             let payload = actix_web::dev::Payload::from(boxed_stream);
             req.set_payload(payload);
 
-            // 新增检测缓存 ///////////////////////////////////////////
+            // 检测缓存 
             let cache_key = format!("{}{}{}", api_key, app_key, model);
             let mut userid = "".to_string();
             if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
                 userid = user_id;
             } 
-            /////////////////////////////////////////////////////////////
 
             if coil_enabled {
-                // 新增获取用户请求，肯定是鉴权通过了的 /////////////////////////////////////
                 if userid == "" {
                     let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
                     let client = reqwest::Client::new();
@@ -163,7 +157,7 @@ where
                             "apiKey": api_key.clone(),
                             "appKey": app_key.clone(),
                             "modelName": model.clone(),
-                            // "cloudRegonId": config.cloud_region_id
+                            "cloudRegionId": config.cloud_region_id
                         }))
                         .send()
                         .await;
@@ -175,46 +169,27 @@ where
                                 userid = user_id.clone();
                                 cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
                             }
-                            
-                            return service.call(req).await;
                         }
                         _ => {
-                            // 不处理校验的
+                            return Err(ErrorInternalServerError("Get user id error"));
                         }
                     }
                 }
-                if userid == "" {
-                    let api_key_clone = api_key.clone();
-                    let model_clone = model.clone();
-                    let (valid_tokens, valid) = join!(
-                        throttled(api_key_clone, model_clone),
-                        query_and_consume(api_key, model)
-                    );
-                    let valid_tokens = valid_tokens?;
-                    let valid = valid?;
-    
-                    if valid && valid_tokens {
-                        service.call(req).await
-                    } else {
-                        Err(actix_web::error::ErrorTooManyRequests("Throttle for request"))
-                    }     
+
+                let userid_clone = userid.clone();
+                let model_clone = model.clone();
+                let (valid_tokens, valid) = join!(
+                    throttled(userid_clone, model_clone),
+                    query_and_consume(userid, model)
+                );
+                let valid_tokens = valid_tokens?;
+                let valid = valid?;
+
+                if valid && valid_tokens {
+                    service.call(req).await
                 } else {
-                    let userid_clone = userid.clone();
-                    let model_clone = model.clone();
-                    let (valid_tokens, valid) = join!(
-                        throttled(userid_clone, model_clone),
-                        query_and_consume(userid, model)
-                    );
-                    let valid_tokens = valid_tokens?;
-                    let valid = valid?;
-    
-                    if valid && valid_tokens {
-                        service.call(req).await
-                    } else {
-                        Err(actix_web::error::ErrorTooManyRequests("Throttle for request"))
-                    }     
-                }
-                // 结束 /////////////////////////////////////////////////////////////////////////    
+                    Err(actix_web::error::ErrorTooManyRequests("Throttle for request"))
+                }       
             } else {
                     service.call(req).await
             }

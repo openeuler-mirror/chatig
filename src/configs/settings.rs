@@ -76,6 +76,8 @@ pub struct Config {
     pub auth_remote_server: String,
     pub coil_enabled: bool,
     pub coil_ip: String,
+    pub cloud_region_id: String,
+    pub cloud_region_name: String,
 }
 
 impl Default for Config {
@@ -95,6 +97,8 @@ impl Default for Config {
             auth_remote_server: "".to_string(),
             coil_enabled: false,
             coil_ip: "".to_string(),
+            cloud_region_id: "".to_string(),
+            cloud_region_name: "".to_string(),
         }
     }
 }
