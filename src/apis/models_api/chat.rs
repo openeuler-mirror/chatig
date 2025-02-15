@@ -79,64 +79,69 @@ impl LLM {
 #[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
 
-    // 获取apikey, appkey, model
-    let auth_header = req.headers().get("Authorization");
-    let apikey = match auth_header {
-        Some(header_value) => {
-            let auth_str = header_value.to_str().map_err(|_| ErrorBadRequest("Invalid Authorization header"))?;
-            if let Some(token_str) = auth_str.strip_prefix("Bearer ") {
-                token_str.to_string()
-            } else {
-                return Err(ErrorBadRequest("Authorization header does not contain 'Bearer '"));
-            }
-        }
-        None => {
-            return Err(ErrorBadRequest("Authorization header is missing"));
-        }
-    };
-
-    let appkey_header = req.headers().get("app_key");
-    let appkey = match appkey_header {
-        Some(header_value) => {
-            header_value.to_str().map_err(|_| ErrorBadRequest("Invalid app_key header"))?.to_string()
-        }
-        None => {
-            return Err(ErrorBadRequest("App_key is missing"));
-        }
-    };
-
-    // 缓存获取user id
-    let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
-    let cache_key = format!("{}{}{}", apikey, appkey, req_body.model.clone());
-    let mut userid = "".to_string();
-    if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
-        userid = user_id;
-    } 
-
-    // 获取user id
     let config = &*GLOBAL_CONFIG;
-    if userid == "" {
-        let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
-        let client = reqwest::Client::new();
-        let response = client.post(&url)
-            .json(&serde_json::json!({
-                "apiKey": apikey.clone(),
-                "appKey": appkey.clone(),
-                "modelName": req_body.model.clone(),
-                "cloudRegionId": config.cloud_region_id
-            }))
-            .send()
-            .await;
 
-        match response {
-            Ok(resp) if resp.status().is_success() => {
-                if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
-                    userid = user_id.clone();
-                    cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
+    // 获取apikey, appkey, userid
+    let mut appkey = "".to_string();
+    let mut apikey = "".to_string();
+    let mut userid = "".to_string();
+    if config.coil_enabled || config.auth_remote_enabled {
+        // apikey
+        let auth_header = req.headers().get("Authorization");
+        apikey = match auth_header {
+            Some(header_value) => {
+                let auth_str = header_value.to_str().map_err(|_| ErrorBadRequest("Invalid Authorization header"))?;
+                if let Some(token_str) = auth_str.strip_prefix("Bearer ") {
+                    token_str.to_string()
+                } else {
+                    return Err(ErrorBadRequest("Authorization header does not contain 'Bearer '"));
                 }
             }
-            _ => {
-                return Err(ErrorInternalServerError("Get remote user id error"));
+            None => {
+                return Err(ErrorBadRequest("Authorization header is missing"));
+            }
+        };
+    
+        // appkey
+        let appkey_header = req.headers().get("app_key");
+        appkey = match appkey_header {
+            Some(header_value) => {
+                header_value.to_str().map_err(|_| ErrorBadRequest("Invalid app_key header"))?.to_string()
+            }
+            None => {
+                return Err(ErrorBadRequest("App_key is missing"));
+            }
+        };
+
+        let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
+        let cache_key = format!("{}{}{}", apikey, appkey, req_body.model.clone());
+        if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
+            userid = user_id;
+        } 
+        // 获取user id
+        if userid == "" {
+            let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
+            let client = reqwest::Client::new();
+            let response = client.post(&url)
+                .json(&serde_json::json!({
+                    "apiKey": apikey.clone(),
+                    "appKey": appkey.clone(),
+                    "modelName": req_body.model.clone(),
+                    "cloudRegionId": config.cloud_region_id
+                }))
+                .send()
+                .await;
+    
+            match response {
+                Ok(resp) if resp.status().is_success() => {
+                    if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
+                        userid = user_id.clone();
+                        cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
+                    }
+                }
+                _ => {
+                    return Err(ErrorInternalServerError("Get remote user id error"));
+                }
             }
         }
     }
