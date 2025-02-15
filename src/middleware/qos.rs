@@ -141,14 +141,13 @@ where
             let payload = actix_web::dev::Payload::from(boxed_stream);
             req.set_payload(payload);
 
-            // 检测缓存 
-            let cache_key = format!("{}{}{}", api_key, app_key, model);
-            let mut userid = "".to_string();
-            if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
-                userid = user_id;
-            } 
-
             if coil_enabled {
+                // 检测缓存 
+                let cache_key = format!("{}{}{}", api_key, app_key, model);
+                let mut userid = "".to_string();
+                if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
+                    userid = user_id;
+                } 
                 if userid == "" {
                     let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
                     let client = reqwest::Client::new();
