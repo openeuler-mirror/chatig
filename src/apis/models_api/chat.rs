@@ -60,8 +60,8 @@ impl LLM {
         LLM { model }
     }
 
-    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, apikey: String, curl_mode: String, appkey: String) -> Result<HttpResponse, Error> {
-        self.model.completions(req_body, apikey, curl_mode, appkey).await
+    async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, userid: String, appkey: String) -> Result<HttpResponse, Error> {
+        self.model.completions(req_body, userid, appkey).await
     }
 }
 
@@ -104,8 +104,6 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
             return Err(ErrorBadRequest("App_key is missing"));
         }
     };
-
-    let curl_model = req_body.model.clone();
 
     // 缓存获取user id
     let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
@@ -168,7 +166,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     };
 
     // 4. Send the request to the model service
-    let response = model.completions(req_body, userid, curl_model, appkey).await;
+    let response = model.completions(req_body, userid, appkey).await;
     match response {
         Ok(resp) => {
             info!(target: "access_log", "{}", log_request(req.clone(),  resp.status().as_u16(), None).await.unwrap());
@@ -179,5 +177,4 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
             Err(err)
         }
     } 
-
 }

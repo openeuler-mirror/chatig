@@ -59,10 +59,10 @@ docker save -o my_image.tar your_image_name
 现在，你可以使用以下命令运行容器：
 
 ```bash
-docker run -d -p 8082:8081 \
+docker run -d -p 8081:8081 \
 	-v /home/yangwb/docker_chatig/configs.yaml:/app/src/configs/configs.yaml \
 	--name chatig_serve \
-	chatig:v0208
+	chatig:v0211_http
 ```
 
 - `-d`：让容器在后台运行。

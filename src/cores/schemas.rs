@@ -43,7 +43,7 @@ pub struct CompletionsUsage {
 }
 
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct CompletionsStreamResponse {
     pub id: String,              // Unique identifier for each generated response.
     pub choices: Vec<CompletionsStreamChoice>,    // List of generated text options returned.
@@ -57,7 +57,7 @@ pub struct CompletionsStreamResponse {
     pub status: Option<String>,  // Status of the request.
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct CompletionsStreamChoice {
     pub finish_reason: Option<String>,   // Reason for finishing the completion.
     pub index: u32,              // Index of the completion.
@@ -65,7 +65,7 @@ pub struct CompletionsStreamChoice {
     pub delta: CompletionsDelta,   // delta object containing the completion.
 }
 
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct CompletionsDelta {
     pub content: Option<String>,        // Content of the completion.
     pub function_call: Option<String>, // Function call.

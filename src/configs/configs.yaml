@@ -8,7 +8,7 @@ apikey:
   value: "chatig"
 
 # main server port
-port: 8003
+port: 8001
 
 # database
 database: "postgres://chatig:chatig@localhost/chatig"

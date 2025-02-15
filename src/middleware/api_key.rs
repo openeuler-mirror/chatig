@@ -19,7 +19,7 @@ pub struct ApiKeyCheck {
 
 // The constructor function
 impl ApiKeyCheck {
-    pub fn new(db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>) -> Self {
+    pub fn _new(db_pool: Rc<Pool<PostgresConnectionManager<NoTls>>>) -> Self {
         Self { db_pool }
     }
 }

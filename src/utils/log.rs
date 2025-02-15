@@ -6,21 +6,21 @@ use std::io::Read;
 use std::fs::metadata;
 
 // Log info for tokens
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct Tokens {
     pub timestamp: i64,
     pub fields: FieldsInfo,
     pub tags: TagsInfo
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct FieldsInfo {
     pub completion_tokens: u32,
     pub prompt_tokens: u32,
     pub total_tokens: u32
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Serialize, Debug, Default, Clone)]
 pub struct TagsInfo {
     pub user_name: String,
     pub model_name: String,
