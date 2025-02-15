@@ -1,7 +1,7 @@
 use actix_web::{App, HttpServer};
 use actix_cors::Cors;
 use std::time::Duration;
-use std::{rc::Rc, fs::File, io::BufReader};
+use std::{fs::File, io::BufReader};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use log4rs::config::{init_raw_config, RawConfig};
@@ -17,7 +17,6 @@ mod schema;
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::init::setup_database;
 use crate::apis::control_api::invitation_code::generate_and_save_invitation_codes;
-use crate::middleware::api_key::ApiKeyCheck;
 use crate::middleware::rate_limit::RateLimitMiddleware;
 use crate::apis::api_doc::ApiDoc;
 use crate::utils::log::get_log_config;
@@ -88,8 +87,8 @@ async fn main() -> std::io::Result<()> {
             .configure(apis::control_api::model_limits::configure)
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
-    //.bind_rustls_0_23(("0.0.0.0", port), tls_config)?
-    .bind(("0.0.0.0", port))?
+    .bind_rustls_0_23(("0.0.0.0", port), tls_config)?
+    // .bind(("0.0.0.0", port))? // http
     .run()
     .await
 }
