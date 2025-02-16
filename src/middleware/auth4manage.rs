@@ -77,7 +77,7 @@ where
             None => None,
         };
 
-        if let Some(_user_id) = cache_result {
+        if cache_result.is_some() {
             // 缓存命中，返回成功
             // println!("Cache result: {:?}", cache_result);
             let fut = self.service.call(req);

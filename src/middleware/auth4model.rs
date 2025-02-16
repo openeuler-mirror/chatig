@@ -98,9 +98,9 @@ where
                 return service.call(req).await;
             }
 
-            let userkey = match user_key_header {
+            let api_key = match user_key_header {
                 Some(s) => s,
-                None => return Err(ErrorUnauthorized("Missing userkey header")),
+                None => return Err(ErrorUnauthorized("Missing api_key header")),
             };
 
             let app_key = match app_key_header {
@@ -114,7 +114,7 @@ where
             };
 
             // 构造缓存的key
-            let cache_key = format!("{}:{}:{}", userkey.clone(), app_key.clone(), model_name.clone());
+            let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
 
             // 检查缓存
             // println!("cache_key: {}", cache_key);
@@ -128,15 +128,15 @@ where
 
             // 如果启用了本地鉴权
             if config.auth_local_enabled {
-                match userkeys.check_userkey(&userkey).await {
+                match userkeys.check_userkey(&api_key).await {
                     Ok(true) => {
                         if let Some(model_value) = model.clone() {
-                            match userkeys.check_userkey_model(&userkey, &model_value).await {
+                            match userkeys.check_userkey_model(&api_key, &model_value).await {
                                 Ok(true) => {
                                     return service.call(req).await;
                                 }
                                 Ok(false) => {
-                                    return Err(ErrorForbidden("Invalid userkey and model combination"));
+                                    return Err(ErrorForbidden("Invalid api_key and model combination"));
                                 }
                                 Err(err) => {
                                     eprintln!("check_userkey_model error: {}", err);
@@ -148,7 +148,7 @@ where
                         }
                     }
                     Ok(false) => {
-                        return Err(ErrorForbidden("Invalid userkey"));
+                        return Err(ErrorForbidden("Invalid api_key"));
                     }
                     Err(err) => {
                         eprintln!("check_userkey error: {}", err);
@@ -163,10 +163,10 @@ where
                 let client = reqwest::Client::new();
                 let response = client.post(&url)
                     .json(&serde_json::json!({
-                        "apiKey": userkey.clone(),
+                        "apiKey": api_key.clone(),
                         "appKey": app_key.clone(),
                         "modelName": model_name.clone(),
-                        "cloudRegionId": "1111".to_string()
+                        "cloudRegionId": config.cloud_region_id
                     }))
                     .send()
                     .await;
@@ -175,7 +175,7 @@ where
                     Ok(resp) if resp.status().is_success() => {
                         // 获取远程校验通过后的用户ID，缓存它
                         if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
-                            cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
+                            cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600)); // 设置缓存时间一小时
                         }
                         
                         return service.call(req).await;
