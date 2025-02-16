@@ -85,11 +85,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         apikey = match auth_header {
             Some(header_value) => {
                 let auth_str = header_value.to_str().map_err(|_| ErrorBadRequest("Invalid Authorization header"))?;
-                if let Some(token_str) = auth_str.strip_prefix("Bearer ") {
-                    token_str.to_string()
-                } else {
-                    return Err(ErrorBadRequest("Authorization header does not contain 'Bearer '"));
-                }
+                auth_str.to_string()
             }
             None => {
                 return Err(ErrorBadRequest("Authorization header is missing"));
