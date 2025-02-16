@@ -103,28 +103,10 @@ where
                 None => return Err(ErrorUnauthorized("Missing api_key header")),
             };
 
-            let app_key = match app_key_header {
-                Some(s) => s,
-                None => return Err(ErrorUnauthorized("Missing app_key header")),
-            };
-
             let model_name = match model.clone() {
                 Some(s) => s,
                 None => return Err(ErrorUnauthorized("Missing model header")),
             };
-
-            // 构造缓存的key
-            let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
-
-            // 检查缓存
-            // println!("cache_key: {}", cache_key);
-            let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
-
-            if let Some(_user_id) = cache_result {
-                // 缓存命中，返回成功
-                // println!("Cache hit for user_id: {:?}", user_id);
-                return service.call(req).await;
-            }
 
             // 如果启用了本地鉴权
             if config.auth_local_enabled {
@@ -159,6 +141,24 @@ where
 
              // 如果启用了远程鉴权
              if config.auth_remote_enabled {
+                let app_key = match app_key_header {
+                    Some(s) => s,
+                    None => return Err(ErrorUnauthorized("Missing app_key header")),
+                };
+                
+                // 构造缓存的key
+                let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
+
+                // 检查缓存
+                // println!("cache_key: {}", cache_key);
+                let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
+
+                if let Some(_user_id) = cache_result {
+                    // 缓存命中，返回成功
+                    // println!("Cache hit for user_id: {:?}", user_id);
+                    return service.call(req).await;
+                }
+
                 let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
                 let client = reqwest::Client::new();
                 let response = client.post(&url)
