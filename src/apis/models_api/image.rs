@@ -8,6 +8,7 @@ use crate::cores::image_models::sdxl::SdxlTurbo;
 // use crate::cores::image_models::stable_diffusion::StableDiffusion;
 
 // Configure the actix_web service routes.
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(v1_images_generations);
 }

@@ -9,6 +9,7 @@ use crate::cores::embedding_models::bge::Bge;
 use crate::middleware::auth4model::Auth4ModelMiddleware;
 
 // Configure the actix_web service routes.
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>) {
     cfg.service(
         web::scope("/v1/embeddings") 

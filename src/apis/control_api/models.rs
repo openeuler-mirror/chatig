@@ -2,8 +2,10 @@ use actix_web::{get, delete, web, HttpResponse, Responder};
 use serde_json::json;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
+use std::sync::Arc;
 
 use crate::cores::models::{get_model, get_models};
+use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
 #[derive(Deserialize,Serialize,ToSchema)]
 pub struct ModelErrorDetails {
@@ -17,10 +19,14 @@ pub struct ModelErrorName {
     pub model_name: String,
 }
 
-pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(models)
-       .service(model_info)
-       .service(delete_model);
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageMiddleware>) {
+    cfg.service(
+        web::scope("/v1/models")
+            .wrap(auth_middleware) // 应用中间件
+            .service(models)
+            .service(model_info)
+            .service(delete_model),
+    );
 }
 
 #[utoipa::path(
@@ -33,7 +39,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 )]
 
 // Lists the currently available models, and provides basic information about each one such as the owner and availability.
-#[get("/v1/models")]
+#[get("")]
 pub async fn models() -> impl Responder {
     match get_models().await {
         Ok(models) => {
@@ -62,7 +68,7 @@ pub async fn models() -> impl Responder {
 )]
 
 // Retrieves a model instance, providing basic information about the model such as the owner and permissioning.
-#[get("/v1/models/{model}")]
+#[get("/{model}")]
 pub async fn model_info(path: web::Path<String>) -> impl Responder {
     let model_name = path.into_inner(); // 提取路径参数
     // 调用封装的函数查询指定模型
@@ -99,7 +105,7 @@ pub async fn model_info(path: web::Path<String>) -> impl Responder {
 
 // Delete a fine-tuned model. You must have the Owner role in your organization to delete a model.
 // And we don't support this feature now.
-#[delete("/v1/models/{model}")]
+#[delete("/{model}")]
 pub async fn delete_model(path: web::Path<String>) -> impl Responder {
     let model_name = path.into_inner();
     // log the model name

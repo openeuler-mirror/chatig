@@ -8,6 +8,7 @@ use crate::cores::files_apps::file_controller::FileChatController;
 use crate::cores::files_apps::chatchat::ChatChatFile;
 use crate::cores::files_apps::file_controller::UploadForm;
 
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(file_chat);
 }

@@ -13,6 +13,7 @@ struct DeleteUserResponse {
     deleted: bool,
 }
 
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(list_users)
         .service(modify_user)

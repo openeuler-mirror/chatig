@@ -7,7 +7,7 @@ use crate::apis::schemas::ErrorResponse;
 use crate::cores::rag_apps;
 use crate::cores::rag_apps::rag_controller::RAGController;
 
-
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(rag_chat_completions);
 }

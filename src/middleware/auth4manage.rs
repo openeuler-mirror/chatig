@@ -72,13 +72,12 @@ where
         // 克隆缓存以便在闭包中使用
         let cache = self.cache.clone();
         // 检查本地缓存
-        // let key = format!("{}:{}", req.headers().get("X-Api-Key").unwrap().to_str().unwrap(), req.match_info().get("model").unwrap());
         let cache_result = match user_key_header {
             Some(ref key) => self.cache.lock().unwrap().check_cache_manage(key),
             None => None,
         };
 
-        if let Some(_user_id) = cache_result {
+        if cache_result.is_some() {
             // 缓存命中，返回成功
             // println!("Cache result: {:?}", cache_result);
             let fut = self.service.call(req);
