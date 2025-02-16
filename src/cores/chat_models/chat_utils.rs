@@ -93,7 +93,7 @@ pub async fn completions_response_non_stream(
     let end_time = Utc::now();
     let model_name = req_body.model.clone();
     let data: Value = json!({
-        "userID": userid,
+        "userId": userid,
         "cloudRegionName": config.cloud_region_name,
         "cloudRegionId": config.cloud_region_id,
         "modelName": model_name,
@@ -223,7 +223,7 @@ pub async fn completions_response_stream(
                             let utc_time: DateTime<Utc> = Utc::now();
                             let end_time = Utc::now();
                             let data: Value = json!({
-                                "userID": userid_clone,
+                                "userId": userid_clone,
                                 "cloudRegionName": config.cloud_region_name,
                                 "cloudRegionId": config.cloud_region_id,
                                 "modelName": model_name_name,

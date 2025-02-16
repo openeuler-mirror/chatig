@@ -19,12 +19,14 @@ use serde_yaml::Value;
 use std::sync::Mutex;
 use log::error;
 use actix_web::error::ErrorInternalServerError;
+use std::time::Duration;
 
 use actix_web::error::PayloadError;
 // 引入 BoxedPayloadStream 定义
 pub type BoxedPayloadStream = std::pin::Pin<Box<dyn futures_core::Stream<Item = Result<Bytes, PayloadError>>>>;
 
 use crate::{configs::settings::GLOBAL_CONFIG, cores::control::model_limits::LimitsManager};
+use crate::middleware::auth_cache::AuthCache;
 
 // 假设的 ChatCompletionRequest 结构体
 #[derive(Deserialize)]
@@ -35,12 +37,14 @@ struct ChatCompletionRequest {
 
 // middleware structure
 pub struct Qos {
+    pub cache: Arc<Mutex<AuthCache>>,
 }
 
 // The constructor function
 impl Qos {
     pub fn new() -> Self {
-        Self {}
+        let cache = Arc::new(Mutex::new(AuthCache::new()));
+        Self { cache }
     }
 }
 
@@ -61,6 +65,7 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ok(QosMiddleware {
             service: Arc::new(service),
+            cache: self.cache.clone(),
         })
     }
 }
@@ -68,6 +73,7 @@ where
 // Middleware implementation
 pub struct QosMiddleware<S> {
     service: S,
+    cache: Arc<Mutex<AuthCache>>,
 }
 
 impl<S, B> Service<ServiceRequest> for QosMiddleware<Arc<S>>
@@ -90,7 +96,7 @@ where
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
         // 获取appkey, apikey
         let appkey = req.headers()
-            .get("app_key")
+            .get("appKey")
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
         let app_key = appkey.clone().unwrap_or_default();
@@ -127,8 +133,7 @@ where
         let config = &*GLOBAL_CONFIG;
         let coil_enabled = config.coil_enabled;
 
-        // 创建 QosAuthCache 实例并使用 Mutex 包装
-        let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
+        let cache = self.cache.clone();
 
         let fut = async move {
             let (chat_request, body_clone) = read_payload_fut.await?;
@@ -174,6 +179,8 @@ where
                         }
                     }
                 }
+
+                req.extensions_mut().insert(userid.clone());
 
                 let userid_clone = userid.clone();
                 let model_clone = model.clone();
@@ -381,7 +388,7 @@ pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
     let request_body = RequestBody {
         user: tokens_apikey,
         item: model,
-        request_amount: "8192".to_string(),
+        request_amount: "100".to_string(),
         limit: limits.max_tokens,
     };
 
@@ -429,40 +436,4 @@ pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
      let _ = body.backoff_ns;
  
      Ok(!body.throttled)
-}
-
-
-
-//////////////////////////////////////////////////////////////////////////////////
-// 增加缓存代码
-use std::collections::HashMap;
-use std::time::{Duration, Instant};
-
-pub struct QosAuthCache {
-    pub cache_model: HashMap<String, (String, Instant)>,  // 存储 api_key+app_key+model_name -> (user_id, expire_time)
-}
-
-impl QosAuthCache {
-    // 创建新的缓存实例
-    pub fn new() -> Self {
-        QosAuthCache {
-            cache_model: HashMap::new(),
-        }
-    }
-
-    // 检查model缓存是否有效
-    pub fn check_cache_model(&self, key: &str) -> Option<String> {
-        if let Some((user_id, expire_time)) = self.cache_model.get(key) {
-            if Instant::now() < *expire_time {
-                return Some(user_id.clone());
-            }
-        }
-        None
-    }
-
-    // 设置model缓存
-    pub fn set_cache_model(&mut self, key: &str, user_id: String, ttl: Duration) {
-        let expire_time = Instant::now() + ttl;
-        self.cache_model.insert(key.to_string(), (user_id, expire_time));
-    }
 }
