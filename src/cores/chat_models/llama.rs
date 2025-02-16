@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::json;
 use chrono::Utc;
+use chrono_tz::Asia::Shanghai;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::control::services::ServiceManager;
@@ -46,7 +47,7 @@ impl Completions for Llama{
             request_body = add_stream_options(request_body, service.servicetype);
         }
 
-        let start_time = Utc::now();
+        let start_time = Utc::now().with_timezone(&Shanghai);
         // 3. Use reqwest to initiate a POST request
         let client = Client::new();
         let response = match client.post(service.url)

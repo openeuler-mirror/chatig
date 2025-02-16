@@ -5,6 +5,8 @@ use serde_json::{Value, json};
 use futures::StreamExt;
 use bytes::Bytes;
 use chrono::{Utc, DateTime};
+use chrono_tz::Tz;
+use chrono_tz::Asia::Shanghai;
 use log::info;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
@@ -44,7 +46,7 @@ pub async fn completions_response_non_stream(
     response: Response, 
     userid: String, 
     appkey: String, 
-    start_time: chrono::DateTime<Utc>) 
+    start_time: DateTime<Tz>) 
     -> Result<HttpResponse, Error> {
 
     // 1. Parse the JSON response body into the KbChatResponse struct
@@ -89,21 +91,21 @@ pub async fn completions_response_non_stream(
 
     // 6. Log the token usage
     let config = &*GLOBAL_CONFIG;
-    let utc_time: DateTime<Utc> = Utc::now();
-    let end_time = Utc::now();
+    let utc_time = Utc::now().with_timezone(&Shanghai); // 转换为上海时间
+    let end_time = Utc::now().with_timezone(&Shanghai); // 转换为上海时间
     let model_name = req_body.model.clone();
     let data: Value = json!({
-        "userId": userid,
+        "accountId": userid,
         "cloudRegionName": config.cloud_region_name,
         "cloudRegionId": config.cloud_region_id,
         "modelName": model_name,
         "appKey": appkey,
-        "startTime": start_time.format("%Y-%m-%d %H:%M:%S").to_string(),
-        "endTime": end_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+        "startTime": start_time.with_timezone(&Shanghai).to_rfc3339(),
+        "endTime": end_time.to_rfc3339(),
         "totalTokens": chat_response.usage.total_tokens,
         "completionTokens": chat_response.usage.completion_tokens,
         "promptTokens": chat_response.usage.prompt_tokens,
-        "time": utc_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+        "time": utc_time.to_rfc3339(),
     });
     let kafka_json: String = serde_json::to_string(&data).unwrap();
     info!(target: "token", "{}", kafka_json);
@@ -130,7 +132,7 @@ pub async fn completions_response_stream(
     response: Response, 
     userid: String, 
     appkey: String, 
-    start_time: chrono::DateTime<Utc>) 
+    start_time: DateTime<Tz>) 
     -> Result<HttpResponse, Error> {
     // Get the byte stream of the response body, and skip the first chunk of data
     let mut body_stream = response.bytes_stream();
@@ -220,20 +222,20 @@ pub async fn completions_response_stream(
                     match &chat_response.usage {
                         Some(usage) => {
                             let config = &*GLOBAL_CONFIG;
-                            let utc_time: DateTime<Utc> = Utc::now();
-                            let end_time = Utc::now();
+                            let utc_time = Utc::now().with_timezone(&Shanghai); // 转换为上海时间
+                            let end_time = Utc::now().with_timezone(&Shanghai); // 转换为上海时间
                             let data: Value = json!({
-                                "userId": userid_clone,
+                                "accountId": userid_clone,
                                 "cloudRegionName": config.cloud_region_name,
                                 "cloudRegionId": config.cloud_region_id,
                                 "modelName": model_name_name,
                                 "appKey": appkey,
-                                "startTime": start_time.format("%Y-%m-%d %H:%M:%S").to_string(),
-                                "endTime": end_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                                "startTime": start_time.with_timezone(&Shanghai).to_rfc3339(),
+                                "endTime": end_time.to_rfc3339(),
                                 "totalTokens": usage.total_tokens,
                                 "completionTokens": usage.completion_tokens,
                                 "promptTokens": usage.prompt_tokens,
-                                "time": utc_time.format("%Y-%m-%d %H:%M:%S").to_string(),
+                                "time": utc_time.to_rfc3339(),
                             });
 
                             let kafka_json: String = serde_json::to_string(&data).unwrap();
