@@ -120,7 +120,7 @@ where
             // println!("cache_key: {}", cache_key);
             let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
 
-            if let Some(user_id) = cache_result {
+            if let Some(_user_id) = cache_result {
                 // 缓存命中，返回成功
                 // println!("Cache hit for user_id: {:?}", user_id);
                 return service.call(req).await;

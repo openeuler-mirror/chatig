@@ -16,7 +16,7 @@ use crate::meta::init::get_pool;
 // use crate::servers::api_schemas::{AppState, InvitationCodeRequest, InvitationCodeResponse};
 use crate::apis::control_api::schemas::{InvitationCodeRequest, InvitationCodeResponse};
 
-
+#[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
     cfg.service(get_all_invitation_codes)
        .service(get_invitation_codes_by_user)

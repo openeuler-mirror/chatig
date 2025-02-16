@@ -1,17 +1,22 @@
 use actix_web::{delete, get, post, put, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorInternalServerError;
 use serde_json::json;
+use std::sync::Arc;
 
 use crate::cores::control::model_limits::LimitsManager;
 use crate::meta::qos::traits::Limits;
+use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
-
-pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(create_model_limits)
-        .service(delete_model_limits)
-        .service(update_model_limits)
-        .service(get_all_model_limits)
-        .service(get_model_limits);
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageMiddleware>) {
+    cfg.service(
+        web::scope("/v1/limits")
+            .wrap(auth_middleware) // 应用中间件
+            .service(create_model_limits)
+            .service(delete_model_limits)
+            .service(update_model_limits)
+            .service(get_all_model_limits)
+            .service(get_model_limits),
+    );
 }
 
 #[utoipa::path(
@@ -24,7 +29,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     )
 )]
 
-#[post("v1/limits")]
+#[post("")]
 pub async fn create_model_limits(
     limits: web::Json<Limits>,
 ) -> Result<impl Responder, Error> {
@@ -58,7 +63,7 @@ pub async fn create_model_limits(
     )
 )]
 
-#[delete("v1/limits/{model_name}")]
+#[delete("/{model_name}")]
 async fn delete_model_limits(
     model_name: web::Path<String>,
 ) -> Result<impl Responder, Error> {
@@ -82,7 +87,7 @@ async fn delete_model_limits(
     })
 }
 
-#[put("v1/limits/{model_name:.*}")]
+#[put("/{model_name:.*}")]
 async fn update_model_limits(
     limits: web::Json<Limits>,
 ) -> Result<impl Responder, Error> {
@@ -125,7 +130,7 @@ async fn update_model_limits(
 )]
 
 // get https://***/v1/limits
-#[get("v1/limits")]
+#[get("")]
 async fn get_all_model_limits() -> Result<impl Responder, Error> {
     let limits_manager = LimitsManager::default();
     limits_manager.get_all_limits_objects().await
@@ -158,7 +163,7 @@ async fn get_all_model_limits() -> Result<impl Responder, Error> {
 )]
 
 // get https://***/v1/limits/{model_name}
-#[get("v1/limits/{model_name:.*}")]
+#[get("/{model_name:.*}")]
 async fn get_model_limits(
     model_name: web::Path<String>,
 ) -> Result<impl Responder, Error> {

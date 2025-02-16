@@ -1,16 +1,21 @@
 use actix_web::{delete, get, post, put, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorInternalServerError;
 use serde_json::json;
+use std::sync::Arc;
 
 use crate::cores::control::files::FileManager;
 use crate::meta::files::traits::File;
+use crate::middleware::auth4manage::Auth4ManageMiddleware;
 
-
-pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(create_file)
-        .service(delete_file)
-        .service(get_all_files)
-        .service(get_file);
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageMiddleware>) {
+    cfg.service(
+        web::scope("/v1/files")
+            .wrap(auth_middleware) // 应用中间件
+            .service(create_file)
+            .service(delete_file)
+            .service(get_all_files)
+            .service(get_file),
+    );
 }
 
 #[utoipa::path(
@@ -23,7 +28,7 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
     )  // 响应内容
 )]
 
-#[post("v1/files")]
+#[post("")]
 pub async fn create_file(
     file: web::Json<File>,
 ) -> Result<impl Responder, Error> {
@@ -58,7 +63,7 @@ pub async fn create_file(
 )]
 
 // delete https://***/v1/files/{file_id}
-#[delete("v1/files/{file_id}")]
+#[delete("/{file_id}")]
 async fn delete_file(
     file_id: web::Path<String>,
 ) -> Result<impl Responder, Error> {
@@ -82,7 +87,7 @@ async fn delete_file(
     })
 }
 
-#[put("v1/files/{file_id}")]
+#[put("/{file_id}")]
 async fn update_file(
     file: web::Json<File>,
 ) -> Result<impl Responder, Error> {
@@ -125,7 +130,7 @@ async fn update_file(
 )]
 
 // get https://***/v1/files
-#[get("v1/files")]
+#[get("")]
 async fn get_all_files() -> Result<impl Responder, Error> {
     let file_manager = FileManager::default();
     file_manager.get_all_file_objects().await
@@ -158,7 +163,7 @@ async fn get_all_files() -> Result<impl Responder, Error> {
 )]
 
 // get https://***/v1/files/{file_id}
-#[get("v1/files/{file_id}")]
+#[get("/{file_id}")]
 async fn get_file(
     file_id: web::Path<String>,
 ) -> Result<impl Responder, Error> {
