@@ -4,6 +4,7 @@ use async_trait::async_trait;
 use reqwest::Client;
 use serde_json::json;
 use chrono::Utc;
+use chrono_tz::Asia::Shanghai;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::chat_models::chat_controller::Completions;
@@ -35,7 +36,7 @@ impl Completions for Bailian{
         });
 
         // 3. Use reqwest to initiate a POST request
-        let start_time = Utc::now();
+        let start_time = Utc::now().with_timezone(&Shanghai);
         let client = Client::new();
         let response = match client.post(&reqwest_url)
             .header("Authorization", format!("Bearer {}", api_key))
