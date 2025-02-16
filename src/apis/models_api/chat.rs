@@ -1,10 +1,7 @@
-use actix_web::{get, post, web, Error, HttpResponse, Responder, HttpRequest};
+use actix_web::{get, post, web, Error, HttpResponse, Responder, HttpRequest, HttpMessage};
 use actix_web::error::ErrorBadRequest;
 use log::{info, error};
-use serde_yaml::Value;
-use std::sync::{Mutex, Arc};
-use actix_web::error::ErrorInternalServerError;
-use std::time::Duration;
+use std::sync::Arc;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
@@ -18,14 +15,13 @@ use crate::utils::log::log_request;
 use crate::cores::chat_models::llama::Llama;
 use crate::cores::chat_models::bailian::Bailian;
 use crate::cores::chat_models::deepseek::DeepSeek;
-use crate::middleware::qos::QosAuthCache;
 use crate::configs::settings::GLOBAL_CONFIG;
 
-pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>) {
+pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>, qos: Arc<Qos>) {
     cfg.service(
         web::scope("/v1/chat") 
             .wrap(auth_middleware)  // 在这个作用域内应用中间件
-            .wrap(Qos::new())
+            .wrap(qos)
             .service(health)
             .service(completions)
     );
@@ -83,7 +79,6 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     // 获取apikey, appkey, userid
     let mut appkey = "".to_string();
     let mut apikey = "".to_string();
-    let mut userid = "".to_string();
     if config.coil_enabled || config.auth_remote_enabled {
         // apikey
         let auth_header = req.headers().get("Authorization");
@@ -102,48 +97,17 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
         };
     
         // appkey
-        let appkey_header = req.headers().get("app_key");
+        let appkey_header = req.headers().get("appKey");
         appkey = match appkey_header {
             Some(header_value) => {
-                header_value.to_str().map_err(|_| ErrorBadRequest("Invalid app_key header"))?.to_string()
+                header_value.to_str().map_err(|_| ErrorBadRequest("Invalid appKey header"))?.to_string()
             }
             None => {
                 return Err(ErrorBadRequest("App_key is missing"));
             }
         };
-
-        let cache: Arc<Mutex<QosAuthCache>> = Arc::new(Mutex::new(QosAuthCache::new()));
-        let cache_key = format!("{}{}{}", apikey, appkey, req_body.model.clone());
-        if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
-            userid = user_id;
-        } 
-        // 获取user id
-        if userid == "" {
-            let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
-            let client = reqwest::Client::new();
-            let response = client.post(&url)
-                .json(&serde_json::json!({
-                    "apiKey": apikey.clone(),
-                    "appKey": appkey.clone(),
-                    "modelName": req_body.model.clone(),
-                    "cloudRegionId": config.cloud_region_id
-                }))
-                .send()
-                .await;
-    
-            match response {
-                Ok(resp) if resp.status().is_success() => {
-                    if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
-                        userid = user_id.clone();
-                        cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
-                    }
-                }
-                _ => {
-                    return Err(ErrorInternalServerError("Get remote user id error"));
-                }
-            }
-        }
     }
+    let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
 
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {

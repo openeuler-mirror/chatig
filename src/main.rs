@@ -8,6 +8,7 @@ use log4rs::config::{init_raw_config, RawConfig};
 use std::sync::Arc;
 use crate::middleware::auth4manage::Auth4ManageMiddleware;
 use crate::middleware::auth4model::Auth4ModelMiddleware;
+use crate::middleware::qos::Qos;
 
 mod apis;
 mod cores;
@@ -66,6 +67,7 @@ async fn main() -> std::io::Result<()> {
     let rate_limiter = RateLimitMiddleware::new(config.rate_limit_tps, config.rate_limit_bucket_capacity, Duration::from_millis(config.rate_limit_refill_interval));
     let auth_manage = Arc::new(Auth4ManageMiddleware::new());
     let auth_model = Arc::new(Auth4ModelMiddleware::new());
+    let qos = Arc::new(Qos::new());
 
     // Start the HTTP server
     HttpServer::new(move || {
@@ -79,7 +81,7 @@ async fn main() -> std::io::Result<()> {
             .wrap(cors)
             //.wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             .wrap(rate_limiter.clone())
-            .configure(|cfg| apis::models_api::chat::configure(cfg, auth_model.clone()))
+            .configure(|cfg| apis::models_api::chat::configure(cfg, auth_model.clone(), qos.clone()))
             // .configure(|cfg| apis::models_api::embeddings::configure(cfg, auth_model.clone()))
             //.configure(apis::models_api::image::configure)
             //.configure(apis::funcs_api::file_chat::configure)
