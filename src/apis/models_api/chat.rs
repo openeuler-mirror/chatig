@@ -20,8 +20,8 @@ use crate::configs::settings::GLOBAL_CONFIG;
 pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>, qos: Arc<Qos>) {
     cfg.service(
         web::scope("/v1/chat") 
-            .wrap(auth_middleware)  // 在这个作用域内应用中间件
             .wrap(qos)
+            .wrap(auth_middleware)  // 在这个作用域内应用中间件
             .service(health)
             .service(completions)
     );
@@ -76,23 +76,9 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
 
     let config = &*GLOBAL_CONFIG;
 
-    // 获取apikey, appkey, userid
     let mut appkey = "".to_string();
-    let mut apikey = "".to_string();
-    if config.coil_enabled || config.auth_remote_enabled {
-        // apikey
-        let auth_header = req.headers().get("Authorization");
-        apikey = match auth_header {
-            Some(header_value) => {
-                let auth_str = header_value.to_str().map_err(|_| ErrorBadRequest("Invalid Authorization header"))?;
-                auth_str.to_string()
-            }
-            None => {
-                return Err(ErrorBadRequest("Authorization header is missing"));
-            }
-        };
-    
-        // appkey
+    if config.auth_remote_enabled {
+        // Get appkey
         let appkey_header = req.headers().get("appKey");
         appkey = match appkey_header {
             Some(header_value) => {
@@ -103,6 +89,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
             }
         };
     }
+    // Get userid
     let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
 
     // 1. Validate that required fields exist in the request data
