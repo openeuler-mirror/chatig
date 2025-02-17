@@ -149,12 +149,21 @@ async fn delete_service(
     let service_manager = ServiceManager::default();
     service_manager.delete_service(&id)
         .await
-        .map(|_| HttpResponse::Ok().json(json!({
-            "code": 200,
-            "message": "Service deleted successfully.",
-            "body": null
-        })))
-        .map_err(|e| {
+        .map(|delete_num| 
+            if delete_num == 0 {
+                HttpResponse::NotFound().json(json!({
+                    "code": 404,
+                    "message": "Service not found.",
+                    "body": null
+                }))
+            } else {
+                HttpResponse::Ok().json(json!({
+                "code": 200,
+                "message": "Service deleted successfully.",
+                "body": null
+                }))
+            }
+        ).map_err(|e| {
             error::ErrorInternalServerError(json!({
                 "code": 500,
                 "message": "Failed to delete service.",

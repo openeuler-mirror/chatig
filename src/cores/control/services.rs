@@ -29,7 +29,7 @@ impl ServiceManager{
         self.services.create_service(service).await
     }
 
-    pub async fn delete_service(&self, service_id: &str) -> Result<(), Box<dyn Error>> {
+    pub async fn delete_service(&self, service_id: &str) -> Result<u64, Box<dyn Error>> {
         self.services.delete_service(service_id).await
     }
 
