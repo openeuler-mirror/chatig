@@ -153,9 +153,10 @@ where
                 // println!("cache_key: {}", cache_key);
                 let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
 
-                if let Some(_user_id) = cache_result {
+                if let Some(user_id) = cache_result {
                     // 缓存命中，返回成功
                     // println!("Cache hit for user_id: {:?}", user_id);
+                    req.extensions_mut().insert(user_id);
                     return service.call(req).await;
                 }
 
@@ -175,6 +176,7 @@ where
                     Ok(resp) if resp.status().is_success() => {
                         // 获取远程校验通过后的用户ID，缓存它
                         if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
+                            req.extensions_mut().insert(user_id.clone());
                             cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600)); // 设置缓存时间一小时
                         }
                         

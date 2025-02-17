@@ -15,18 +15,13 @@ use std::sync::Arc;
 use futures::stream::once;
 use futures_core::Stream;
 use tokio::join;
-use serde_yaml::Value;
-use std::sync::Mutex;
 use log::error;
-use actix_web::error::ErrorInternalServerError;
-use std::time::Duration;
 
 use actix_web::error::PayloadError;
 // 引入 BoxedPayloadStream 定义
 pub type BoxedPayloadStream = std::pin::Pin<Box<dyn futures_core::Stream<Item = Result<Bytes, PayloadError>>>>;
 
 use crate::{configs::settings::GLOBAL_CONFIG, cores::control::model_limits::LimitsManager};
-use crate::middleware::auth_cache::AuthCache;
 
 // 假设的 ChatCompletionRequest 结构体
 #[derive(Deserialize)]
@@ -37,14 +32,12 @@ struct ChatCompletionRequest {
 
 // middleware structure
 pub struct Qos {
-    pub cache: Arc<Mutex<AuthCache>>,
 }
 
 // The constructor function
 impl Qos {
     pub fn new() -> Self {
-        let cache = Arc::new(Mutex::new(AuthCache::new()));
-        Self { cache }
+        Self {}
     }
 }
 
@@ -65,7 +58,6 @@ where
     fn new_transform(&self, service: S) -> Self::Future {
         ok(QosMiddleware {
             service: Arc::new(service),
-            cache: self.cache.clone(),
         })
     }
 }
@@ -73,7 +65,6 @@ where
 // Middleware implementation
 pub struct QosMiddleware<S> {
     service: S,
-    cache: Arc<Mutex<AuthCache>>,
 }
 
 impl<S, B> Service<ServiceRequest> for QosMiddleware<Arc<S>>
@@ -94,20 +85,6 @@ where
     }
 
     fn call(&self, mut req: ServiceRequest) -> Self::Future {
-        // 获取appkey, apikey
-        let appkey = req.headers()
-            .get("appKey")
-            .and_then(|hv| hv.to_str().ok())
-            .map(|s| s.to_string());
-        let app_key = appkey.clone().unwrap_or_default();
-
-        let api_key = req
-           .headers()
-           .get("Authorization")
-           .and_then(|auth_header| auth_header.to_str().ok())
-           .map(|auth_str| auth_str.replace("Bearer ", ""))
-           .unwrap_or_default();
-
         let payload = req.take_payload();
         let body = BytesMut::new();
 
@@ -132,8 +109,7 @@ where
 
         let config = &*GLOBAL_CONFIG;
         let coil_enabled = config.coil_enabled;
-
-        let cache = self.cache.clone();
+        let auth_remote_enabled = config.auth_remote_enabled;
 
         let fut = async move {
             let (chat_request, body_clone) = read_payload_fut.await?;
@@ -146,41 +122,8 @@ where
             let payload = actix_web::dev::Payload::from(boxed_stream);
             req.set_payload(payload);
 
-            if coil_enabled {
-                // 检测缓存 
-                let cache_key = format!("{}{}{}", api_key, app_key, model);
-                let mut userid = "".to_string();
-                if let Some(user_id) = cache.lock().unwrap().check_cache_model(&cache_key) {
-                    userid = user_id;
-                } 
-                if userid == "" {
-                    let url = format!("{}/v1/apiInfo/check", config.auth_remote_server);
-                    let client = reqwest::Client::new();
-                    let response = client.post(&url)
-                        .json(&serde_json::json!({
-                            "apiKey": api_key.clone(),
-                            "appKey": app_key.clone(),
-                            "modelName": model.clone(),
-                            "cloudRegionId": config.cloud_region_id
-                        }))
-                        .send()
-                        .await;
-
-                    match response {
-                        Ok(resp) if resp.status().is_success() => {
-                            // 获取远程校验通过后的用户ID，缓存它
-                            if let Some(user_id) = resp.json::<Value>().await.ok().and_then(|json| json.get("userId").and_then(|u| u.as_str()).map(|u| u.to_string())) {
-                                userid = user_id.clone();
-                                cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(3600));
-                            }
-                        }
-                        _ => {
-                            return Err(ErrorInternalServerError("Get user id error"));
-                        }
-                    }
-                }
-
-                req.extensions_mut().insert(userid.clone());
+            if coil_enabled && auth_remote_enabled {
+                let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
 
                 let userid_clone = userid.clone();
                 let model_clone = model.clone();
@@ -225,9 +168,6 @@ async fn query_and_consume(apikey: String, model: String) -> Result<bool, Error>
 
     let config = &*GLOBAL_CONFIG;
     let ip = &config.coil_ip;
-
-    // 获取apikey，并且根据apikey获取到用户的信息
-    // doing
 
     let limit_manager = LimitsManager::default();
     let limits = limit_manager.get_limits_object(&model)
