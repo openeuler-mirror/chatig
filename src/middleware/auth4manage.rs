@@ -67,6 +67,7 @@ where
         let user_key_header = req.headers()
             .get("Authorization")
             .and_then(|hv| hv.to_str().ok())
+            .map(|auth_str| auth_str.replace("Bearer ", ""))
             .map(|s| s.to_string());
 
         // 克隆缓存以便在闭包中使用
@@ -102,8 +103,7 @@ where
                 match userkeys.check_userkey(&userkey).await {
                     Ok(true) => {
                         // 本地鉴权成功，缓存用户ID
-                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
-
+                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(300));
                         return fut.await;
                     },
                     Ok(false) => {
@@ -134,12 +134,26 @@ where
 
                 // println!("response {:?}", response);
                 match response {
+
                     Ok(resp) if resp.status().is_success() => {
-                        // 远程鉴权成功，缓存用户ID
-                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
-                        return fut.await;
+                        // 解析响应体中的JSON数据
+                        let json: serde_json::Value = match resp.json().await {
+                            Ok(json) => json,
+                            Err(_) => return Err(ErrorForbidden("Failed to parse response")),
+                        };
+            
+                        // 检查isValid字段是否为true
+                        if let Some(is_valid) = json.get("isValid").and_then(|v| v.as_bool()) {
+                            if is_valid {
+                                // 远程鉴权成功，缓存用户ID
+                                cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
+                                return fut.await;
+                            }
+                        }
+                        return Err(ErrorForbidden("Remote validation failed"));
                     }
                     _ => return Err(ErrorForbidden("Remote validation failed")),
+
                 }
             }
 
