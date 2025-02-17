@@ -9,6 +9,9 @@ apikey:
 
 # main server port
 port: 8001
+server_cert_file: "/etc/chatig/https/server_cert_file.crt"
+chain_cert_file: "/etc/chatig/https/chain_cert_file.crt"
+key_file: "/etc/chatig/https/key_file.key"
 
 # database
 database: "postgres://chatig:chatig@localhost/chatig"

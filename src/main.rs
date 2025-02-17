@@ -50,14 +50,20 @@ async fn main() -> std::io::Result<()> {
     println!("Starting server on port {}", port);
 
     //Https set
-    let mut certs_file = BufReader::new(File::open("./docs/https/server.crt").unwrap());
-    let mut key_file = BufReader::new(File::open("./docs/https/server.key").unwrap());
+    println!("{:?}",config);
+    let mut server_cert_file = BufReader::new(File::open(config.server_cert_file.clone()).unwrap());
+    let mut chain_cert_file = BufReader::new(File::open(config.chain_cert_file.clone()).unwrap()); // 中间证书链
+    let mut key_file = BufReader::new(File::open(config.key_file.clone()).unwrap());
 
-    let tls_certs = rustls_pemfile::certs(&mut certs_file)
+    let server_certs = rustls_pemfile::certs(&mut server_cert_file)
         .collect::<Result<Vec<_>, _>>()
         .unwrap();
+    let chain_certs = rustls_pemfile::certs(&mut chain_cert_file)
+        .collect::<Result<Vec<_>, _>>()
+        .unwrap();
+    let mut tls_certs = server_certs;
+    tls_certs.extend(chain_certs);
     let tls_key = rustls_pemfile::private_key(&mut key_file).unwrap().unwrap();
-
     // set up TLS config options
     let tls_config = rustls::ServerConfig::builder()
         .with_no_client_auth()
