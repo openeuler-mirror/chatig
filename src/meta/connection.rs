@@ -254,6 +254,60 @@ impl DBCrud {
     
         Ok(result)
     }
+
+    /*
+    example:
+
+    use serde_json::json;
+
+    #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
+    pub struct Model {
+        pub id: String,
+        pub object: String,
+        pub created: i64,
+        pub owned_by: String,
+    }
+
+    let id_value = json!("test01");
+    let model = DBCrud::get::<Model>("models", "id", &id_value).await
+     */
+    pub async fn get_multis<T: DeserializeOwned>(
+        table_name: &str,
+        id_column: &str, // 用于过滤行的列名，可以不是主键，如果存在列名不存在的情况，需要自行处理异常
+        id_value: &JsonValue, // 用于过滤行的列值，使用 JsonValue 作为输入类型
+    ) -> Result<Vec<T>, Box<dyn Error>> 
+    where
+        T: for<'q> sqlx::FromRow<'q, sqlx::postgres::PgRow>
+            + for<'q> sqlx::FromRow<'q, sqlx::mysql::MySqlRow>
+            + DeserializeOwned
+            + Send
+            + Unpin,
+    {
+        let conn = get_db_connection().await?;
+        let dbtype = &*GLOBAL_CONFIG.database_type;
+    
+        let query_str = format!(
+            "SELECT * FROM {} WHERE {} = {}",
+            table_name,
+            id_column,
+            if dbtype == "pgsql" { "$1" } else { "?" } // PostgreSQL 使用 $1，占位符
+        );
+    
+        let result = match conn {
+            DbConnection::MySql(mut mysql_conn) => {
+                let mut sql_query = query_as::<_, T>(&query_str);
+                sql_query = Self::bind_value_query_as(sql_query, id_value);
+                sql_query.fetch_all(&mut *mysql_conn).await?
+            }
+            DbConnection::Postgres(mut pg_conn) => {
+                let mut sql_query = query_as::<_, T>(&query_str);
+                sql_query = Self::bind_value_query_as(sql_query, id_value);
+                sql_query.fetch_all(&mut *pg_conn).await?
+            }
+        };
+    
+        Ok(result)
+    }
     
     /*
     example:

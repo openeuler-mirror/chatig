@@ -36,7 +36,7 @@ pub struct ServiceConfig {
 pub trait ServicesTrait: Send + Sync {
     async fn load_services_table(&self) -> Result<(), Box<dyn Error>>;
     async fn create_service(&self, service: &ServiceConfig) -> Result<(), Box<dyn Error>>;
-    async fn delete_service(&self, service_id: &str) -> Result<(), Box<dyn Error>>;
+    async fn delete_service(&self, service_id: &str) -> Result<u64, Box<dyn Error>>;
     async fn update_service(&self, service: &ServiceConfig) -> Result<u64, Box<dyn Error>>;
     async fn get_service(&self, service_id: &str) -> Result<Option<ServiceConfig>, Box<dyn Error>>;
     async fn get_service_by_model(&self, active_model: &str) -> Result<Option<ServiceConfig>, Box<dyn Error>>;
