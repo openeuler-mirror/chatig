@@ -81,6 +81,7 @@ pub struct Config {
     pub server_cert_file: String,
     pub chain_cert_file: String,
     pub key_file:String,
+    pub auth_cache_time: u64,
 }
 
 impl Default for Config {
@@ -105,6 +106,7 @@ impl Default for Config {
             server_cert_file: "/etc/chatig/https/server_cert_file.crt".to_string(),
             chain_cert_file: "/etc/chatig/https/chain_cert_file.crt".to_string(),
             key_file: "/etc/chatig/https/key_file.key".to_string(),
+            auth_cache_time: 1200,
         }
     }
 }

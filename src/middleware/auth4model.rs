@@ -184,7 +184,7 @@ where
                             if let (Some(user_id), Some(true)) = (account_id.clone(), is_valid) {
                                 // 获取远程校验通过后的用户ID，缓存它
                                 req.extensions_mut().insert(user_id.clone());
-                                cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(300)); // 设置缓存时间
+                                cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(config.auth_cache_time)); // 设置缓存时间
                                 return service.call(req).await;
                             }
                             // println!("accountId: {:?}, isValid: {:?}, user_id{:?}", account_id, is_valid, user_id);

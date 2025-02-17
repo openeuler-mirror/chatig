@@ -28,6 +28,7 @@ rate_limit_refill_interval: 100
 auth_local_enabled: false
 auth_remote_enabled: false
 auth_remote_server: ""
+auth_cache_time: 1200
 # cloud region
 cloud_region_id: ""
 cloud_region_name: ""
