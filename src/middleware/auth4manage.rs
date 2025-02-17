@@ -11,7 +11,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct Auth4ManageMiddleware {
     userkeys: Arc<dyn UserKeysTrait>, 
-    cache: Arc<Mutex<AuthCache>>,
+    pub cache: Arc<Mutex<AuthCache>>,
 }
 
 impl Auth4ManageMiddleware {

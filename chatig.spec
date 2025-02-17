@@ -1,4 +1,4 @@
-Name:           chatig
+Name:           cuig
 Version:        %{version}
 Release:        1%{?dist}
 Summary:        Universal API
@@ -23,7 +23,6 @@ mkdir -p %{buildroot}/usr/local/bin/
 install -m 644 src/configs/configs.yaml %{buildroot}/etc/chatig/
 install -m 644 src/configs/servers_configs.yaml %{buildroot}/etc/chatig/
 install -m 755 target/release/chatig %{buildroot}/usr/local/bin/
-install -m 644 ./docs/https/server.crt %{buildroot}/etc/chatig/
 
 mkdir -p %{buildroot}/usr/lib/systemd/system/
 cat > %{buildroot}/usr/lib/systemd/system/chatig.service << EOF
@@ -44,7 +43,6 @@ EOF
 /usr/lib/systemd/system/chatig.service
 /etc/chatig/configs.yaml
 /etc/chatig/servers_configs.yaml
-/etc/chatig/server.crt
 
 %post
 sudo systemctl daemon-reload  

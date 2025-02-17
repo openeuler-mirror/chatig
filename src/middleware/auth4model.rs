@@ -12,7 +12,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct Auth4ModelMiddleware {
     userkeys: Arc<dyn UserKeysTrait>,
-    cache: Arc<Mutex<AuthCache>>,
+    pub cache: Arc<Mutex<AuthCache>>,
 }
 
 impl Auth4ModelMiddleware {
@@ -173,7 +173,7 @@ where
                     .send()
                     .await;
 
-                println!("response: {:?}", response);
+                // println!("response: {:?}", response);
                 match response {
                     Ok(resp) if resp.status().is_success() => {
                         if let Ok(json) = resp.json::<serde_json::Value>().await {
