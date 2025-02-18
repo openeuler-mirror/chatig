@@ -113,8 +113,6 @@ pub async fn completions_response_non_stream(
     let config = &*GLOBAL_CONFIG;
     let coil_enabled = config.coil_enabled;
     if coil_enabled {
-        // 下述的model需要换成上述的chat_response.model；apikey需要传入
-        // let status_is_success = consume("sk-4XNwrsq6bS9KD11E6xkrKEItGBcR".to_string(), "deepseek-ai/DeepSeek-R1-Distill-Llama-8B".to_string(), chat_response.usage.total_tokens).await?;
         let status_is_success = consume(userid, model_name, chat_response.usage.total_tokens).await?;
         if status_is_success == "success" {
         } else {

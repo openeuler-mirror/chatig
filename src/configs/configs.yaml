@@ -34,9 +34,10 @@ auth_cache_capacity: 3000
 cloud_region_id: ""
 cloud_region_name: ""
 
-# coil server
+# coil server, such as ["192.168.56.6:8011", "192.168.56.7:8010"]
 coil_enabled: false
-coil_ip: "192.168.56.6:8090"
+multi_ip: []
+connections_per_server: 32
 
 # Log config
 refresh_rate: 30 seconds

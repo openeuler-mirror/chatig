@@ -16,12 +16,14 @@ use futures::stream::once;
 use futures_core::Stream;
 use tokio::join;
 use log::error;
+use log::info;
 
 use actix_web::error::PayloadError;
 // 引入 BoxedPayloadStream 定义
 pub type BoxedPayloadStream = std::pin::Pin<Box<dyn futures_core::Stream<Item = Result<Bytes, PayloadError>>>>;
 
 use crate::{configs::settings::GLOBAL_CONFIG, cores::control::model_limits::LimitsManager};
+use crate::GLOBAL_MULTI_SERVER_CLIENT;
 
 // 假设的 ChatCompletionRequest 结构体
 #[derive(Deserialize)]
@@ -123,8 +125,9 @@ where
             req.set_payload(payload);
 
             if coil_enabled && auth_remote_enabled {
+            // if coil_enabled {
                 let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
-
+              
                 let userid_clone = userid.clone();
                 let model_clone = model.clone();
                 let (valid_tokens, valid) = join!(
@@ -164,10 +167,13 @@ struct RequestBody {
 }
 
 async fn query_and_consume(apikey: String, model: String) -> Result<bool, Error> {
-    let client: reqwest::Client = reqwest::Client::new();
-
-    let config = &*GLOBAL_CONFIG;
-    let ip = &config.coil_ip;
+    // let client: reqwest::Client = reqwest::Client::new();
+    let (client, base_url) = {
+        let global_client = GLOBAL_MULTI_SERVER_CLIENT.lock().unwrap(); // 直接加锁
+        let (client, base_url) = global_client.get_client_and_base_url(&apikey, &model);
+        // 克隆必要的数据，避免持有 MutexGuard
+        (client.clone(), base_url.to_string())
+    };
 
     let limit_manager = LimitsManager::default();
     let limits = limit_manager.get_limits_object(&model)
@@ -179,7 +185,8 @@ async fn query_and_consume(apikey: String, model: String) -> Result<bool, Error>
     };
 
     // 修改请求路径
-    let url = format!("http://{}/query_and_consume", ip);
+    // let url = format!("http://{}/query_and_consume", ip);
+    let url = format!("{}/query_and_consume", base_url);
 
     // 构建请求体
     let request_body = RequestBody {
@@ -248,13 +255,15 @@ struct ResponseConsumeData {
 }
 
 pub async fn consume(apikey: String, model: String, tokens: u32) -> Result<String, Error> {
-    let client: reqwest::Client = reqwest::Client::new();
+    // let client: reqwest::Client = reqwest::Client::new();
+    let (client, base_url) = {
+        let global_client = GLOBAL_MULTI_SERVER_CLIENT.lock().unwrap(); // 直接加锁
+        let (client, base_url) = global_client.get_client_and_base_url(&apikey, &model);
+        // 克隆必要的数据，避免持有 MutexGuard
+        (client.clone(), base_url.to_string())
+    };
 
-    let config = &*GLOBAL_CONFIG;
-    let ip = &config.coil_ip;
-
-    // 修改请求路径
-    let url = format!("http://{}/consume", ip);
+    let url = format!("{}/consume", base_url);
 
     // 用户和rpm的不一样
     let tokens_apikey = format!("tokens{}", apikey);
@@ -304,13 +313,17 @@ pub async fn consume(apikey: String, model: String, tokens: u32) -> Result<Strin
 
 // 测试token是否达到阈值
 pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
-    let client: reqwest::Client = reqwest::Client::new();
-
-    let config = &*GLOBAL_CONFIG;
-    let ip = &config.coil_ip;
+    // let client: reqwest::Client = reqwest::Client::new();
+    let (client, base_url) = {
+        let global_client = GLOBAL_MULTI_SERVER_CLIENT.lock().unwrap(); // 直接加锁
+        let (client, base_url) = global_client.get_client_and_base_url(&apikey, &model);
+        // 克隆必要的数据，避免持有 MutexGuard
+        (client.clone(), base_url.to_string())
+    };
 
     // 修改请求路径
-    let url = format!("http://{}/throttled", ip);
+    // let url = format!("http://{}/throttled", ip);
+    let url = format!("{}/throttled", base_url);
 
     let limit_manager = LimitsManager::default();
     let limits = limit_manager.get_limits_object(&model)
@@ -376,4 +389,138 @@ pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
      let _ = body.backoff_ns;
  
      Ok(!body.throttled)
+}
+
+use std::hash::{Hash, Hasher};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::collections::BTreeMap;
+use tokio::net::TcpStream;
+use reqwest::Client;
+use tokio::time::{self, Duration};
+use futures::future::join_all;
+use std::sync::Mutex;
+
+// 客户端组
+pub struct ClientGroup {
+    clients: Vec<Client>,
+    index: AtomicUsize,
+    base_url: String,
+}
+
+impl ClientGroup {
+    pub fn new(base_url: &str) -> Self {
+        let config = &*GLOBAL_CONFIG;
+        let mut clients = Vec::with_capacity(config.connections_per_server);
+        for _ in 0..config.connections_per_server {
+            let client = Client::new();
+            clients.push(client);
+        }
+        ClientGroup {
+            clients,
+            index: AtomicUsize::new(0),
+            base_url: base_url.to_string(),
+        }
+    }
+
+    fn get_client(&self) -> &Client {
+        let idx = self.index.fetch_add(1, Ordering::Relaxed) % self.clients.len();
+        &self.clients[idx]
+    }
+
+    fn get_base_url(&self) -> &str {
+        &self.base_url
+    }
+}
+
+// 多服务端客户端
+pub struct MultiServerClient {
+    pub client_groups: BTreeMap<String, ClientGroup>,
+    default_client: Client,
+    default_base_url: String,
+}
+
+impl MultiServerClient {
+    pub fn new() -> Self {
+        let config = &*GLOBAL_CONFIG;
+        let mut client_groups = BTreeMap::new();
+        for ip in &config.multi_ip {
+            let base_url = format!("http://{}", ip);
+            let group = ClientGroup::new(&base_url);
+            client_groups.insert(ip.clone(), group);
+        }
+        // 默认空的给找不到的时候用
+        let default_client = Client::new();
+        let default_base_url = "http://127.0.0.1:8011".to_string();
+        MultiServerClient { 
+            client_groups,
+            default_client,
+            default_base_url,
+        }
+    }
+
+    pub fn get_client_and_base_url(&self, user: &str, item: &str) -> (&Client, &str) {
+        if self.client_groups.is_empty() {
+            return (&self.default_client, &self.default_base_url);
+        }
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        user.hash(&mut hasher);
+        item.hash(&mut hasher);
+        let hash = hasher.finish();
+        let keys: Vec<&String> = self.client_groups.keys().collect();
+        let idx = (hash % keys.len() as u64) as usize; // 直接对 keys 的长度取模
+        let ip = keys[idx];
+        let group = self.client_groups.get(ip).unwrap();
+        (group.get_client(), group.get_base_url())
+    }
+    
+    pub async fn is_address_available(ip: &str) -> bool {
+        match time::timeout(Duration::from_secs(1), TcpStream::connect(ip)).await {
+            Ok(Ok(_)) => true,
+            _ => false,
+        }
+    }
+}
+
+pub async fn check_and_remove_unavailable_clients(multi_server_client_clone: Arc<Mutex<MultiServerClient>>) {
+    let client = multi_server_client_clone.lock().unwrap();
+    // 提取需要的数据到局部变量
+    let config = &*GLOBAL_CONFIG;
+    let multi_ip = config.multi_ip.clone();
+    drop(client); // 提前释放锁
+
+    let mut tasks = vec![];
+    // 为每个地址创建一个检查任务
+    for ip in multi_ip.clone() {
+        let ip_clone = ip.clone();
+        let task = tokio::spawn(async move {
+            (ip_clone.clone(), MultiServerClient::is_address_available(&ip_clone).await)
+        });
+        tasks.push(task);
+    }
+
+    // 等待所有检查任务完成
+    let results = join_all(tasks).await;
+
+    // 再次获取锁来更新状态
+    let mut client = multi_server_client_clone.lock().unwrap();
+
+    for result in results {
+        if let Ok((ip, is_available)) = result {
+            if is_available {
+                if!client.client_groups.contains_key(&ip) {
+                    let base_url = format!("http://{}", ip);
+                    let group = ClientGroup::new(&base_url);
+                    client.client_groups.insert(ip.clone(), group);
+                    info!(target: "access_log", "Address {} is available. Adding clients...", ip);
+                    // println!("Address {} is available. Adding clients...", ip);
+                }
+            } else {
+                if client.client_groups.contains_key(&ip) {
+                    client.client_groups.remove(&ip);
+                    info!(target: "access_log", "Address {} is not available. Removing clients...", ip);
+                    // println!("Address {} is not available. Removing clients...", ip);
+                }
+            }
+        }
+    }
 }
