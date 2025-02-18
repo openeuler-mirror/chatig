@@ -6,6 +6,8 @@ use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 use log4rs::config::{init_raw_config, RawConfig};
 use std::sync::Arc;
+use actix_web::rt::time;
+use std::sync::Mutex;
 use crate::middleware::auth4manage::Auth4ManageMiddleware;
 use crate::middleware::auth4model::Auth4ModelMiddleware;
 use crate::middleware::qos::Qos;
@@ -24,12 +26,28 @@ use crate::apis::control_api::invitation_code::generate_and_save_invitation_code
 use crate::middleware::rate_limit::RateLimitMiddleware;
 use crate::apis::api_doc::ApiDoc;
 use crate::utils::log::get_log_config;
+use crate::middleware::qos::MultiServerClient;
+use crate::middleware::qos::check_and_remove_unavailable_clients;
+use lazy_static::lazy_static;
+
+lazy_static! {
+    static ref GLOBAL_MULTI_SERVER_CLIENT: Arc<Mutex<MultiServerClient>> = Arc::new(Mutex::new(MultiServerClient::new()));
+}
 
 #[cfg(test)]
 mod test;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
+    let multi_server_client_clone = GLOBAL_MULTI_SERVER_CLIENT.clone();
+    let mut interval = time::interval(Duration::from_secs(3600));
+    tokio::spawn(async move {
+        loop {
+            interval.tick().await;
+            check_and_remove_unavailable_clients(multi_server_client_clone.clone()).await;
+        }
+    });
+
     let config = &*GLOBAL_CONFIG;
 
     // Get log config and init log
