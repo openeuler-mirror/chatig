@@ -11,7 +11,7 @@ use std::time::Duration;
 #[derive(Clone)]
 pub struct Auth4ManageMiddleware {
     userkeys: Arc<dyn UserKeysTrait>, 
-    cache: Arc<Mutex<AuthCache>>,
+    pub cache: Arc<Mutex<AuthCache>>,
 }
 
 impl Auth4ManageMiddleware {
@@ -103,7 +103,7 @@ where
                 match userkeys.check_userkey(&userkey).await {
                     Ok(true) => {
                         // 本地鉴权成功，缓存用户ID
-                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(300));
+                        cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(config.auth_cache_time));
                         return fut.await;
                     },
                     Ok(false) => {
@@ -146,7 +146,7 @@ where
                         if let Some(is_valid) = json.get("isValid").and_then(|v| v.as_bool()) {
                             if is_valid {
                                 // 远程鉴权成功，缓存用户ID
-                                cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(3600));
+                                cache.lock().unwrap().set_cache_manage(userkey.clone(), Duration::from_secs(config.auth_cache_time));
                                 return fut.await;
                             }
                         }

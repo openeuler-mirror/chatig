@@ -32,6 +32,12 @@ pub struct ServiceConfig {
     pub models: Vec<String>,
 }
 
+#[derive(Deserialize)]
+pub struct InvalidateCacheRequest {
+    pub key: String,
+    pub cache_type: String, // 指定是清除哪一类缓存, 可以是 "manage" 或 "model"
+}
+
 #[async_trait]
 pub trait ServicesTrait: Send + Sync {
     async fn load_services_table(&self) -> Result<(), Box<dyn Error>>;

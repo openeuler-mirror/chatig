@@ -82,6 +82,8 @@ pub struct Config {
     pub key_file:String,
     pub multi_ip: Vec<String>,
     pub connections_per_server: usize,
+    pub auth_cache_time: u64,
+    pub auth_cache_capacity: usize,
 }
 
 impl Default for Config {
@@ -109,6 +111,8 @@ impl Default for Config {
                 "".to_string(),
             ],
             connections_per_server: 32,
+            auth_cache_time: 1200,
+            auth_cache_capacity: 3000,
         }
     }
 }

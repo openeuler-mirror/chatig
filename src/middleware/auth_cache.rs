@@ -1,7 +1,7 @@
-// use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use std::num::NonZeroUsize;
 use lru::LruCache;
+use crate::configs::settings::GLOBAL_CONFIG;
 
 pub struct AuthCache {
     pub cache_manage: LruCache<String, (String, Instant)>,  // 存储 api_key -> (is_valid, expire_time)
@@ -11,7 +11,8 @@ pub struct AuthCache {
 impl AuthCache {
     // 创建新的缓存实例
     pub fn new() -> Self {
-        let capacity = NonZeroUsize::new(3000).expect("Capacity must be non-zero");// 限制最大缓存大小为1000
+        let config = &*GLOBAL_CONFIG;
+        let capacity = NonZeroUsize::new(config.auth_cache_capacity).expect("Capacity must be non-zero");// 限制最大缓存大小
         AuthCache {
             cache_manage: LruCache::new(capacity),
             cache_model: LruCache::new(capacity)
@@ -38,6 +39,7 @@ impl AuthCache {
 
     // 检查model缓存是否有效
     pub fn check_cache_model(&mut self, key: &str) -> Option<String> {
+        // println!("Current cache_model content: {:?}", self.cache_model);
         if let Some((user_id, expire_time)) = self.cache_model.get(key) {
             if Instant::now() < *expire_time {
                 return Some(user_id.clone());

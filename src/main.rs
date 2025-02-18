@@ -68,7 +68,7 @@ async fn main() -> std::io::Result<()> {
     println!("Starting server on port {}", port);
 
     //Https set
-    println!("{:?}",config);
+    // println!("{:?}",config);
     let mut server_cert_file = BufReader::new(File::open(config.server_cert_file.clone()).unwrap());
     let mut chain_cert_file = BufReader::new(File::open(config.chain_cert_file.clone()).unwrap()); // 中间证书链
     let mut key_file = BufReader::new(File::open(config.key_file.clone()).unwrap());
@@ -115,7 +115,7 @@ async fn main() -> std::io::Result<()> {
             //.configure(apis::control_api::projects::configure)
             //.configure(apis::control_api::invitation_code::configure)
             //.configure(apis::control_api::users::configure)
-            .configure(|cfg| apis::control_api::services::configure(cfg, auth_manage.clone()))
+            .configure(|cfg| apis::control_api::services::configure(cfg, auth_manage.clone(), auth_model.clone()))
             .configure(|cfg| apis::control_api::model_limits::configure(cfg, auth_manage.clone()))
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     }) 
