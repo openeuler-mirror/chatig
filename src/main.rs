@@ -39,16 +39,18 @@ mod test;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let multi_server_client_clone = GLOBAL_MULTI_SERVER_CLIENT.clone();
-    let mut interval = time::interval(Duration::from_secs(3600));
-    tokio::spawn(async move {
-        loop {
-            interval.tick().await;
-            check_and_remove_unavailable_clients(multi_server_client_clone.clone()).await;
-        }
-    });
-
     let config = &*GLOBAL_CONFIG;
+
+    if config.coil_enabled {
+        let multi_server_client_clone = GLOBAL_MULTI_SERVER_CLIENT.clone();
+        let mut interval = time::interval(Duration::from_secs(3600));
+        tokio::spawn(async move {
+            loop {
+                interval.tick().await;
+                check_and_remove_unavailable_clients(multi_server_client_clone.clone()).await;
+            }
+        });
+    }
 
     // Get log config and init log
     let log_config_content = get_log_config()?;
