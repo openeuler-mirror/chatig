@@ -2,7 +2,6 @@ use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, erro
 use std::{sync::{Arc, Mutex}, task::{Context, Poll}};
 use futures::{future::{ok, LocalBoxFuture, Ready}, StreamExt};
 use actix_web::error::{ErrorUnauthorized, ErrorForbidden};
-use serde_json::Value;
 use std::time::Duration;
 
 use crate::configs::settings::GLOBAL_CONFIG;
@@ -10,6 +9,20 @@ use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
 use crate::middleware::auth_cache::AuthCache;
 use log::info;
+
+use serde::Deserialize;
+use futures::stream::once;
+use bytes::Bytes;
+use bytes::BytesMut;
+use futures_core::Stream;
+use actix_web::error::PayloadError;
+pub type BoxedPayloadStream = std::pin::Pin<Box<dyn futures_core::Stream<Item = Result<Bytes, PayloadError>>>>;
+
+#[derive(Deserialize)]
+struct ChatCompletionRequest {
+    model: String,
+    // 可以添加其他字段
+}
 
 #[derive(Clone)]
 pub struct Auth4ModelMiddleware {
@@ -79,22 +92,37 @@ where
             .and_then(|hv| hv.to_str().ok())
             .map(|s| s.to_string());
 
-        let cache = self.cache.clone();
-        Box::pin(async move {
-            let mut body = actix_web::web::BytesMut::new();
-            while let Some(chunk) = req.take_payload().next().await {
-                let chunk = chunk?;
+        let payload = req.take_payload();
+        let body = BytesMut::new();
+
+        async fn read_payload(mut payload: impl Stream<Item = Result<Bytes, PayloadError>> + Unpin, mut body: BytesMut) -> Result<(ChatCompletionRequest, BytesMut), Error> {
+            while let Some(chunk) = payload.next().await {
+                let chunk = chunk.map_err(|e| {
+                    actix_web::error::ErrorInternalServerError(format!("Failed to read payload: {}", e))
+                })?;
                 body.extend_from_slice(&chunk);
             }
+            let body_clone = body.clone();
+            let chat_request = serde_json::from_slice::<ChatCompletionRequest>(&body_clone)
+                .map_err(|e| ErrorBadRequest(format!("Failed to parse JSON: {}", e)))?;
+            Ok((chat_request, body_clone))
+        }
 
-            let model = if let Ok(json) = serde_json::from_slice::<Value>(&body) {
-                json.get("model").and_then(|m| m.as_str().map(|s| s.to_string()))
-            } else {
-                None
-            };
-            let (_, mut new_payload) = actix_http::h1::Payload::create(true);
-            new_payload.unread_data(body.freeze());
-            req.set_payload(actix_web::dev::Payload::from(new_payload));
+        let read_payload_fut = async move {
+            read_payload(payload, body).await
+        };
+
+        let cache: Arc<Mutex<AuthCache>> = self.cache.clone();
+        Box::pin(async move {
+            let (chat_request, body_clone) = read_payload_fut.await?;
+            let model = Some(chat_request.model);
+
+            // 将请求体重新放回 ServiceRequest
+            let body_bytes = Bytes::from(body_clone);
+            let stream = once(async { Ok::<_, PayloadError>(body_bytes) });
+            let boxed_stream: BoxedPayloadStream = Box::pin(stream);
+            let payload = actix_web::dev::Payload::from(boxed_stream);
+            req.set_payload(payload);
 
             // 如果没有启用鉴权，直接继续请求
             if !config.auth_local_enabled && !config.auth_remote_enabled {
@@ -105,7 +133,7 @@ where
                 Some(s) => s,
                 None => return Err(ErrorUnauthorized("Missing api_key header")),
             };
-
+            
             let model_name = match model.clone() {
                 Some(s) => s,
                 None => return Err(ErrorUnauthorized("Missing model header")),
