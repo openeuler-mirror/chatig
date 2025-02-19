@@ -73,7 +73,6 @@ impl LLM {
 
 #[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
-
     let config = &*GLOBAL_CONFIG;
 
     let mut appkey = "".to_string();

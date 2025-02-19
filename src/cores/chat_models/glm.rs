@@ -30,7 +30,7 @@ impl Completions for GLM{
         let stream = req_body.stream.unwrap_or(true).clone();
         let mut request_body = json!({
             "model": service.model_name,
-            "temperature": req_body.temperature.unwrap_or(0.3).clone(),
+            "temperature": req_body.temperature.unwrap_or(0.95).clone(),
             "n": req_body.n.unwrap_or(1).clone(),
             "stream": stream,
             "stop": null,
