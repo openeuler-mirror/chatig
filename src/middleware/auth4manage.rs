@@ -2,11 +2,13 @@ use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, Erro
 use std::{task::{Context, Poll}, sync::{Arc, Mutex}};
 use futures::future::{ok, LocalBoxFuture, Ready};
 use actix_web::error::{ErrorUnauthorized, ErrorForbidden, ErrorInternalServerError};
+use std::time::Duration;
+
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
 use crate::middleware::auth_cache::AuthCache;
-use std::time::Duration;
+use log::info;
 
 #[derive(Clone)]
 pub struct Auth4ManageMiddleware {
@@ -80,7 +82,7 @@ where
 
         if cache_result.is_some() {
             // 缓存命中，返回成功
-            // println!("Cache result: {:?}", cache_result);
+            info!(target: "access_log", "Manage Cache result: {:?}", cache_result);
             let fut = self.service.call(req);
             return Box::pin(fut);
         }
@@ -132,7 +134,7 @@ where
                     .send()
                     .await;
 
-                // println!("response {:?}", response);
+                // info!(target: "access_log", "Manage remote auth response: {:?}", response);
                 match response {
 
                     Ok(resp) if resp.status().is_success() => {
