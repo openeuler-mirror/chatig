@@ -69,34 +69,14 @@ async fn main() -> std::io::Result<()> {
     let port = config.port;
     println!("Starting server on port {}", port);
 
-    //Https set
-    // println!("{:?}",config);
-    let mut server_cert_file = BufReader::new(File::open(config.server_cert_file.clone()).unwrap());
-    let mut chain_cert_file = BufReader::new(File::open(config.chain_cert_file.clone()).unwrap()); // 中间证书链
-    let mut key_file = BufReader::new(File::open(config.key_file.clone()).unwrap());
-
-    let server_certs = rustls_pemfile::certs(&mut server_cert_file)
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
-    let chain_certs = rustls_pemfile::certs(&mut chain_cert_file)
-        .collect::<Result<Vec<_>, _>>()
-        .unwrap();
-    let mut tls_certs = server_certs;
-    tls_certs.extend(chain_certs);
-    let tls_key = rustls_pemfile::private_key(&mut key_file).unwrap().unwrap();
-    // set up TLS config options
-    let tls_config = rustls::ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(tls_certs, tls_key)
-        .unwrap();
-
+    // Rate limiter and other middleware initialization
     let rate_limiter = RateLimitMiddleware::new(config.rate_limit_tps, config.rate_limit_bucket_capacity, Duration::from_millis(config.rate_limit_refill_interval));
     let auth_manage = Arc::new(Auth4ManageMiddleware::new());
     let auth_model = Arc::new(Auth4ModelMiddleware::new());
     let qos = Arc::new(Qos::new());
 
     // Start the HTTP server
-    HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         let cors = Cors::default()
             .allow_any_origin() // cors
             .allowed_methods(vec!["GET", "POST", "PUT", "DELETE"])
@@ -120,9 +100,33 @@ async fn main() -> std::io::Result<()> {
             .configure(|cfg| apis::control_api::services::configure(cfg, auth_manage.clone(), auth_model.clone()))
             .configure(|cfg| apis::control_api::model_limits::configure(cfg, auth_manage.clone()))
             .service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
-    }) 
-    .bind_rustls_0_23(("0.0.0.0", port), tls_config)?
-    // .bind(("0.0.0.0", port))? // http
-    .run()
-    .await
+    });
+
+    // HTTPS or HTTP setup
+    if config.https_enabled {
+        // HTTPS setup
+        let mut server_cert_file = BufReader::new(File::open(config.server_cert_file.clone()).unwrap());
+        let mut chain_cert_file = BufReader::new(File::open(config.chain_cert_file.clone()).unwrap()); // 中间证书链
+        let mut key_file = BufReader::new(File::open(config.key_file.clone()).unwrap());
+
+        let server_certs = rustls_pemfile::certs(&mut server_cert_file)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let chain_certs = rustls_pemfile::certs(&mut chain_cert_file)
+            .collect::<Result<Vec<_>, _>>()
+            .unwrap();
+        let mut tls_certs = server_certs;
+        tls_certs.extend(chain_certs);
+        let tls_key = rustls_pemfile::private_key(&mut key_file).unwrap().unwrap();
+        // set up TLS config options
+        let tls_config = rustls::ServerConfig::builder()
+            .with_no_client_auth()
+            .with_single_cert(tls_certs, tls_key)
+            .unwrap();
+
+        server.bind_rustls_0_23(("0.0.0.0", port), tls_config)?.run().await
+    } else {
+        // HTTP setup
+        server.bind(("0.0.0.0", port))?.run().await
+    }
 }

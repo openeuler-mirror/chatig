@@ -64,6 +64,7 @@ pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> 
 pub struct Config {
     pub temp_docs_path: String,
     pub port: u16,
+    pub https_enabled: bool,
     pub database: String,
     pub connection_num: u32,
     pub database_type: String,
@@ -90,7 +91,8 @@ impl Default for Config {
     fn default() -> Self {
         Config {
             temp_docs_path: "/root/.chatig/data/temp_docs".to_string(),
-            port: 80,
+            port: 8081,
+            https_enabled: false,
             database: "postgres://chatig:chatig@localhost/chatig".to_string(),
             connection_num: 10,
             database_type: "pgsql".to_string(),

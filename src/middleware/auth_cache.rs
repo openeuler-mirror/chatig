@@ -1,6 +1,7 @@
 use std::time::{Duration, Instant};
 use std::num::NonZeroUsize;
 use lru::LruCache;
+
 use crate::configs::settings::GLOBAL_CONFIG;
 
 pub struct AuthCache {
@@ -20,7 +21,7 @@ impl AuthCache {
     }
 
     pub fn check_cache_manage(&mut self, key: &str) -> Option<()> {
-        // println!("Current cache_manage content: {:?}", self.cache_manage);
+        println!("Auth current cache_manage content: {:?}", self.cache_manage);
         if let Some((_, expire_time)) = self.cache_manage.get(key) {  // 解包元组
             if Instant::now() < *expire_time {
                 return Some(());  // 缓存有效
@@ -39,7 +40,7 @@ impl AuthCache {
 
     // 检查model缓存是否有效
     pub fn check_cache_model(&mut self, key: &str) -> Option<String> {
-        // println!("Current cache_model content: {:?}", self.cache_model);
+        println!("Auth current cache_model content: {:?}", self.cache_model);
         if let Some((user_id, expire_time)) = self.cache_model.get(key) {
             if Instant::now() < *expire_time {
                 return Some(user_id.clone());

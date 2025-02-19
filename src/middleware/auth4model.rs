@@ -2,12 +2,14 @@ use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, erro
 use std::{sync::{Arc, Mutex}, task::{Context, Poll}};
 use futures::{future::{ok, LocalBoxFuture, Ready}, StreamExt};
 use actix_web::error::{ErrorUnauthorized, ErrorForbidden};
+use serde_json::Value;
+use std::time::Duration;
+
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
 use crate::middleware::auth_cache::AuthCache;
-use serde_json::Value;
-use std::time::Duration;
+use log::info;
 
 #[derive(Clone)]
 pub struct Auth4ModelMiddleware {
@@ -151,12 +153,11 @@ where
                 let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
 
                 // 检查缓存
-                // println!("cache_key: {}", cache_key);
                 let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
 
                 if let Some(user_id) = cache_result {
                     // 缓存命中，返回成功
-                    // println!("Cache hit for user_id: {:?}", user_id);
+                    info!(target: "access_log", "Cache hit for user_id: {:?}", user_id);
                     req.extensions_mut().insert(user_id);
                     return service.call(req).await;
                 }
@@ -173,7 +174,7 @@ where
                     .send()
                     .await;
 
-                // println!("response: {:?}", response);
+                // info!(target: "access_log", "Model remote auth response: {:?}", response);
                 match response {
                     Ok(resp) if resp.status().is_success() => {
                         if let Ok(json) = resp.json::<serde_json::Value>().await {
@@ -187,7 +188,7 @@ where
                                 cache.lock().unwrap().set_cache_model(&cache_key, user_id, Duration::from_secs(config.auth_cache_time)); // 设置缓存时间
                                 return service.call(req).await;
                             }
-                            // println!("accountId: {:?}, isValid: {:?}, user_id{:?}", account_id, is_valid, user_id);
+                            // info!(target: "access_log", "Model remote auth: accountId: {:?}, isValid: {:?}, user_id{:?}", account_id, is_valid, user_id);
                         }
                         // 如果 accountId 为空或 isValid 为 false，返回错误
                         return Err(ErrorForbidden("Remote validation failed: accountId is empty or isValid is false"));
