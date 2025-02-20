@@ -1,4 +1,4 @@
-use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::{ErrorBadRequest, ErrorInternalServerError}, Error, HttpMessage};
+use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, error::ErrorBadRequest, Error, HttpMessage};
 use std::{sync::{Arc, Mutex}, task::{Context, Poll}};
 use futures::{future::{ok, LocalBoxFuture, Ready}, StreamExt};
 use actix_web::error::{ErrorUnauthorized, ErrorForbidden};
@@ -8,7 +8,7 @@ use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
 use crate::middleware::auth_cache::AuthCache;
-use log::info;
+use log::{info, error};
 
 use serde::Deserialize;
 use futures::stream::once;
@@ -87,11 +87,6 @@ where
             .map(|auth_str| auth_str.replace("Bearer ", ""))
             .map(|s| s.to_string());
 
-        let app_key_header = req.headers()
-            .get("appKey")
-            .and_then(|hv| hv.to_str().ok())
-            .map(|s| s.to_string());
-
         let payload = req.take_payload();
         let body = BytesMut::new();
 
@@ -146,39 +141,40 @@ where
                         if let Some(model_value) = model.clone() {
                             match userkeys.check_userkey_model(&api_key, &model_value).await {
                                 Ok(true) => {
+                                    req.extensions_mut().insert(config.localuserid.clone());
                                     return service.call(req).await;
                                 }
                                 Ok(false) => {
-                                    return Err(ErrorForbidden("Invalid api_key and model combination"));
+                                    // 本地鉴权失败，继续执行远程鉴权
+                                    // return Err(ErrorForbidden("Invalid api_key and model combination"));
                                 }
                                 Err(err) => {
-                                    eprintln!("check_userkey_model error: {}", err);
-                                    return Err(ErrorInternalServerError("check_userkey_model error"));
+                                    error!(target: "Auth check_userkey_model error:", "{}", err);
+                                    // 本地鉴权失败，继续执行远程鉴权
+                                    // return Err(ErrorInternalServerError("check_userkey_model error"));
                                 }
                             }
                         } else {
-                            return Err(ErrorBadRequest("Missing model info"));
+                            return Err(ErrorBadRequest("Auth Missing model info"));
                         }
                     }
                     Ok(false) => {
-                        return Err(ErrorForbidden("Invalid api_key"));
+                        // 本地鉴权失败，继续执行远程鉴权
+                        // return Err(ErrorForbidden("Invalid api_key"));
                     }
                     Err(err) => {
-                        eprintln!("check_userkey error: {}", err);
-                        return Err(ErrorInternalServerError("check_userkey error"));
+                        error!(target: "Auth check_userkey error:", "{}", err);
+                        // 本地鉴权失败，继续执行远程鉴权
+                        // return Err(ErrorInternalServerError("check_userkey error"));
                     }
                 }
             }
 
             // 如果启用了远程鉴权
              if config.auth_remote_enabled {
-                let app_key = match app_key_header {
-                    Some(s) => s,
-                    None => return Err(ErrorUnauthorized("Missing app_key header")),
-                };
                 
                 // 构造缓存的key
-                let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
+                let cache_key = format!("{}:{}", api_key.clone(), model_name.clone());
 
                 // 检查缓存
                 let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
@@ -195,10 +191,10 @@ where
                 let response = client.post(&url)
                     .json(&serde_json::json!({
                         "apiKey": api_key.clone(),
-                        "appKey": app_key.clone(),
                         "modelName": model_name.clone(),
                         "cloudRegionId": config.cloud_region_id
                     }))
+                    .timeout(Duration::from_secs(5))
                     .send()
                     .await;
 

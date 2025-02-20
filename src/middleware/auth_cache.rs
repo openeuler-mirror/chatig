@@ -6,7 +6,7 @@ use crate::configs::settings::GLOBAL_CONFIG;
 
 pub struct AuthCache {
     pub cache_manage: LruCache<String, (String, Instant)>,  // 存储 api_key -> (is_valid, expire_time)
-    pub cache_model: LruCache<String, (String, Instant)>,  // 存储 api_key+app_key+model_name -> (user_id, expire_time)
+    pub cache_model: LruCache<String, (String, Instant)>,  // 存储 api_key+model_name -> (user_id, expire_time)
 }
 
 impl AuthCache {

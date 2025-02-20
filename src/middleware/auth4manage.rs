@@ -1,14 +1,14 @@
 use actix_web::{dev::{Service, ServiceRequest, ServiceResponse, Transform}, Error};
 use std::{task::{Context, Poll}, sync::{Arc, Mutex}};
 use futures::future::{ok, LocalBoxFuture, Ready};
-use actix_web::error::{ErrorUnauthorized, ErrorForbidden, ErrorInternalServerError};
+use actix_web::error::{ErrorUnauthorized, ErrorForbidden};
 use std::time::Duration;
 
 use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::middleware::traits::UserKeysTrait;
 use crate::meta::middleware::impls::UserKeysImpl;
 use crate::middleware::auth_cache::AuthCache;
-use log::info;
+use log::{info, error};
 
 #[derive(Clone)]
 pub struct Auth4ManageMiddleware {
@@ -98,7 +98,7 @@ where
             // 本地鉴权逻辑
             if config.auth_local_enabled {
                 let userkey = match user_key_header {
-                    Some(s) => s,
+                    Some(ref s) => s.clone(),
                     None => return Err(ErrorUnauthorized("Missing userkey header")),
                 };
 
@@ -109,11 +109,13 @@ where
                         return fut.await;
                     },
                     Ok(false) => {
-                        return Err(ErrorForbidden("Invalid userkey"));
+                        // 本地鉴权失败，继续执行远程鉴权
+                        // return Err(ErrorForbidden("Invalid userkey"));
                     },
                     Err(err) => {
-                        eprintln!("check_userkey error: {}", err);
-                        return Err(ErrorInternalServerError("check_userkey error"));
+                        error!(target: "Auth check_userkey error:", "{}", err);
+                        // 本地鉴权失败，继续执行远程鉴权
+                        // return Err(ErrorInternalServerError("check_userkey error"));
                     }
                 }
             }
@@ -121,7 +123,7 @@ where
             // 远程鉴权逻辑
             if config.auth_remote_enabled {
                 let userkey = match user_key_header {
-                    Some(s) => s,
+                    Some(ref s) => s.clone(),
                     None => return Err(ErrorUnauthorized("Missing userkey header")),
                 };
 
@@ -131,6 +133,7 @@ where
                     .json(&serde_json::json!({
                         "apiKey": userkey.clone()
                     }))
+                    .timeout(Duration::from_secs(5))
                     .send()
                     .await;
 
