@@ -76,7 +76,7 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
     let config = &*GLOBAL_CONFIG;
 
     let mut appkey = "".to_string();
-    if config.auth_remote_enabled {
+    if config.auth_remote_enabled && !config.auth_local_enabled {
         // Get appkey
         let appkey_header = req.headers().get("appKey");
         appkey = match appkey_header {

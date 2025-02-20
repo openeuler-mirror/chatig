@@ -85,6 +85,7 @@ pub struct Config {
     pub connections_per_server: usize,
     pub auth_cache_time: u64,
     pub auth_cache_capacity: usize,
+    pub localuserid: String,
 }
 
 impl Default for Config {
@@ -115,6 +116,7 @@ impl Default for Config {
             connections_per_server: 32,
             auth_cache_time: 1200,
             auth_cache_capacity: 3000,
+            localuserid: "111111".to_string()
         }
     }
 }
