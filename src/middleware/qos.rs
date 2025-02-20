@@ -111,9 +111,6 @@ where
 
         let config = &*GLOBAL_CONFIG;
         let coil_enabled = config.coil_enabled;
-        let auth_remote_enabled = config.auth_remote_enabled;
-        let auth_local_enabled = config.auth_local_enabled;
-        let localuserid = config.localuserid.clone();
 
         let fut = async move {
             let (chat_request, body_clone) = read_payload_fut.await?;
@@ -126,26 +123,7 @@ where
             let payload = actix_web::dev::Payload::from(boxed_stream);
             req.set_payload(payload);
 
-            if coil_enabled && auth_local_enabled{
-                let userid = localuserid;
-                req.extensions_mut().insert(userid.clone());
-              
-                let userid_clone = userid.clone();
-                let model_clone = model.clone();
-                let (valid_tokens, valid) = join!(
-                    throttled(userid_clone, model_clone),
-                    query_and_consume(userid, model)
-                );
-                let valid_tokens = valid_tokens?;
-                let valid = valid?;
-
-                if valid && valid_tokens {
-                    service.call(req).await
-                } else {
-                    Err(actix_web::error::ErrorTooManyRequests("Throttle for request"))
-                }    
-            } else if coil_enabled && auth_remote_enabled {
-            // if coil_enabled {
+            if coil_enabled {
                 let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
               
                 let userid_clone = userid.clone();
