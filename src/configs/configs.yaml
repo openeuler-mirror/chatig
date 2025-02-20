@@ -41,6 +41,7 @@ cloud_region_name: ""
 coil_enabled: false
 multi_ip: []
 connections_per_server: 32
+localuserid: "111111"
 
 # Log config
 refresh_rate: 30 seconds
