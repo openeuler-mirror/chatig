@@ -87,11 +87,6 @@ where
             .map(|auth_str| auth_str.replace("Bearer ", ""))
             .map(|s| s.to_string());
 
-        let app_key_header = req.headers()
-            .get("appKey")
-            .and_then(|hv| hv.to_str().ok())
-            .map(|s| s.to_string());
-
         let payload = req.take_payload();
         let body = BytesMut::new();
 
@@ -177,13 +172,9 @@ where
 
             // 如果启用了远程鉴权
              if config.auth_remote_enabled {
-                let app_key = match app_key_header {
-                    Some(s) => s,
-                    None => return Err(ErrorUnauthorized("Missing app_key header")),
-                };
                 
                 // 构造缓存的key
-                let cache_key = format!("{}:{}:{}", api_key.clone(), app_key.clone(), model_name.clone());
+                let cache_key = format!("{}:{}", api_key.clone(), model_name.clone());
 
                 // 检查缓存
                 let cache_result = cache.lock().unwrap().check_cache_model(&cache_key);
@@ -200,7 +191,6 @@ where
                 let response = client.post(&url)
                     .json(&serde_json::json!({
                         "apiKey": api_key.clone(),
-                        "appKey": app_key.clone(),
                         "modelName": model_name.clone(),
                         "cloudRegionId": config.cloud_region_id
                     }))

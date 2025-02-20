@@ -15,7 +15,6 @@ use crate::utils::log::log_request;
 use crate::cores::chat_models::llama::Llama;
 use crate::cores::chat_models::bailian::Bailian;
 use crate::cores::chat_models::deepseek::DeepSeek;
-use crate::configs::settings::GLOBAL_CONFIG;
 
 pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>, qos: Arc<Qos>) {
     cfg.service(
@@ -73,22 +72,9 @@ impl LLM {
 
 #[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
-    let config = &*GLOBAL_CONFIG;
+    // let config = &*GLOBAL_CONFIG;
 
-    let mut appkey = "".to_string();
-    if config.auth_remote_enabled && !config.auth_local_enabled {
-        // Get appkey
-        let appkey_header = req.headers().get("appKey");
-        appkey = match appkey_header {
-            Some(header_value) => {
-                header_value.to_str().map_err(|_| ErrorBadRequest("Invalid appKey header"))?.to_string()
-            }
-            None => {
-                return Err(ErrorBadRequest("App_key is missing"));
-            }
-        };
-    }
-    // Get userid
+    let appkey = "".to_string();
     let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
 
     // 1. Validate that required fields exist in the request data
