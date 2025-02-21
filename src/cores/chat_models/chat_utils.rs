@@ -90,7 +90,8 @@ pub async fn completions_response_non_stream(
             "prompt_tokens": chat_response.usage.prompt_tokens,
             "completion_tokens": chat_response.usage.completion_tokens,
             "total_tokens": chat_response.usage.total_tokens
-      }
+      },
+      "prompt_logprobs": chat_response.prompt_logprobs
     });
 
     // 4. push kafka data
@@ -209,7 +210,8 @@ pub async fn completions_response_stream(
                                 "delta": {
                                     "content": chat_response.choices[0].delta.content
                                 },
-                                "finish_reason": ""
+                                "finish_reason": "",
+                                "logprobs": chat_response.choices[0].logprobs
                             }
                         ] 
                     });
@@ -274,7 +276,8 @@ fn get_first_last_str(bytes: Bytes, model_name: String) -> Result<(String, Strin
                     "role": chat_response.choices[0].delta.role,
                     "content": chat_response.choices[0].delta.content
                 },
-                "finish_reason": ""
+                "finish_reason": "",
+                "logprobs": chat_response.choices[0].logprobs
             }
         ]
     });
@@ -288,8 +291,12 @@ fn get_first_last_str(bytes: Bytes, model_name: String) -> Result<(String, Strin
         "choices": [
             {
                 "index": chat_response.choices[0].index,
-                "delta": {},
-                "finish_reason": "stop"
+                "delta": {
+                    "content": ""
+                },
+                "finish_reason": "stop",
+                "stop_reason": null,
+                "logprobs": chat_response.choices[0].logprobs
             }
         ]
     });

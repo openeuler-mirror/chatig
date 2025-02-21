@@ -3,14 +3,14 @@ use utoipa::ToSchema;
 
 
 // ------------------------------------------ Completion API ------------------------------------------ 
-#[derive(Deserialize, Serialize, Clone, ToSchema)]
+#[derive(Deserialize, Serialize, Clone, ToSchema, Debug)]
 pub struct Message {
     pub role: String,
     pub content: String,
 }
 
 // Define the API format accepted by the interface
-#[derive(Deserialize, Serialize, ToSchema)]
+#[derive(Deserialize, Serialize, ToSchema, Debug)]
 pub struct ChatCompletionRequest {
     pub model: String,                      // (Required) Name of the model used
     pub messages: Vec<Message>,             // (Required) List of messages, each message must contain `role` and `content`.
