@@ -17,6 +17,7 @@ pub struct CompletionsResponse {
     pub usage: CompletionsUsage,            // Usage statistics for the request.
     pub message_id: Option<String>, // Unique identifier for the message.
     pub status: Option<String>,  // Status of the request.
+    pub prompt_logprobs: Option<String>, // Log probabilities for the prompt.
 }
 #[derive(Deserialize, Serialize, Debug, ToSchema)]
 pub struct CompletionsChoice {

@@ -28,7 +28,7 @@ impl Completions for DeepSeek {
         };
 
         // 2. Build the request body
-        let stream = req_body.stream.unwrap_or(true);
+        let stream = req_body.stream.unwrap_or(false);
         let mut request_body = json!({
             "model": service.model_name,
             "temperature": req_body.temperature.unwrap_or(1.0),
@@ -63,6 +63,10 @@ impl Completions for DeepSeek {
         // 4. Return the response based on the request's streaming status
         if stream {
             // Handle streaming response requests
+            // let body_stream = response.bytes_stream();
+            // Ok(HttpResponse::Ok()
+            // .content_type("text/event-stream")
+            // .streaming(body_stream))
             completions_response_stream(req_body, response, userid, appkey, start_time).await
         } else {
             // handle non-streaming response requests
