@@ -21,8 +21,7 @@ impl Completions for DeepSeek {
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, userid: String, appkey: String) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
         let service_manager = ServiceManager::default();
-        let service = service_manager.get_service_by_model(&self.model_name).await?;
-        let service = match service {
+        let service = match service_manager.get_service_by_model(&self.model_name).await? {
             Some(service) => service,
             None => return Err(ErrorBadRequest(format!("{} model is not supported", self.model_name))),
         };
