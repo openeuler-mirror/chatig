@@ -73,7 +73,6 @@ impl LLM {
 #[post("/completions")]
 pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // let config = &*GLOBAL_CONFIG;
-
     let appkey = "".to_string();
     let userid = req.extensions().get::<String>().cloned().unwrap_or_else(|| "".to_string());
 

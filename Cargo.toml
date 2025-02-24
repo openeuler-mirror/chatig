@@ -3,6 +3,11 @@ name = "chatig"
 version = "0.1.0"
 edition = "2021"
 
+[package.metadata.deb]
+maintainer = "Your Name <your.email@example.com>"
+copyright = "2023 Your Name"
+depends = "libssl3"
+
 [dependencies]
 actix-web = { version = "4.9.0", features = ["rustls-0_23"] }
 actix-service = "2.0"
@@ -48,3 +53,6 @@ futures-core = "0.3.31"
 chrono-tz = "0.6"
 lru = "0.10"
 lazy_static = "1.4"
+
+# ubuntu2204 aarch64(required)
+# openssl = { version = "0.10", features = ["vendored"] }
