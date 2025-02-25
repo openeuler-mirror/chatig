@@ -179,7 +179,7 @@ async fn query_and_consume(apikey: String, model: String) -> Result<bool, Error>
         .map_err(|e| ErrorBadRequest(format!("Failed to get model limits: {}", e)))?;
     let limits = match limits {
         Some(limits) => limits,
-        None => return Err(ErrorBadRequest(format!("{} model is not supported", model))),
+        None => return Err(ErrorBadRequest(format!("Qos: {} is not in model_limits table", model))),
     };
 
     // 修改请求路径
@@ -329,7 +329,7 @@ pub async fn throttled(apikey: String, model: String) -> Result<bool, Error> {
         .map_err(|e| ErrorBadRequest(format!("Failed to get model limits: {}", e)))?;
     let limits = match limits {
         Some(limits) => limits,
-        None => return Err(ErrorBadRequest(format!("{} model is not supported", model))),
+        None => return Err(ErrorBadRequest(format!("Qos: {} is not in model_limits table", model))),
     };
 
     // 用户和rpm的不一样

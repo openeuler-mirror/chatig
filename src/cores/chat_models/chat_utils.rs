@@ -58,12 +58,11 @@ pub async fn completions_response_non_stream(
     let response_text = response.text().await
         .map_err(|err| ErrorInternalServerError(format!("Failed to read response: {}", err)))?;
 
-    let trimmed_text = response_text.trim_matches('"');
+    // let trimmed_text = response_text.trim_matches('"');
+    // let unescaped_text = trimmed_text.replace("\\\"", "\"").replace("\\\\", "\\");
 
-    let unescaped_text = trimmed_text.replace("\\\"", "\"").replace("\\\\", "\\");
-
-    let json_value: Value = serde_json::from_str(&unescaped_text)
-        .map_err(|err| ErrorInternalServerError(format!("Failed to parse unescaped JSON: {}, {}", err, unescaped_text)))?;
+    let json_value: Value = serde_json::from_str(&response_text)
+        .map_err(|err| ErrorInternalServerError(format!("Failed to parse unescaped JSON: {}, {}", err, response_text)))?;
 
     let chat_response: CompletionsResponse = match serde_json::from_value(json_value) {
         Ok(chat_response) => chat_response,
