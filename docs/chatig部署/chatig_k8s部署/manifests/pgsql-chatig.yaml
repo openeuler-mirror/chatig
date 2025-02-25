@@ -1,0 +1,53 @@
+# pgsql-service.yaml, pgsql Deployment 配置
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pgsql-kitig
+  namespace: kitig
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pgsql-kitig
+  template:
+    metadata:
+      labels:
+        app: pgsql-kitig
+    spec:
+      containers:
+        - name: pgsql-kitig
+          image: docker.io/library/pgsql-kitig:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: "kitig"
+            - name: POSTGRES_PASSWORD
+              value: "kitig"
+            - name: POSTGRES_DB
+              value: "kitig"
+          volumeMounts:
+            - mountPath: "/var/lib/postgresql/data"
+              name: pgsql-data
+      volumes:
+        - name: pgsql-data
+          persistentVolumeClaim:
+            claimName: pgsql-data-pvc
+      nodeSelector:
+        kubernetes.io/hostname: cos12  # 绑定到含 GPU 的工作节点
+---
+# pgsql Service 配置
+apiVersion: v1
+kind: Service
+metadata:
+  name: pgsql-kitig-service
+  namespace: kitig
+spec:
+  ports:
+    - port: 5432        # 将 Service 的对外端口改为 5433
+      targetPort: 5432  # 指向容器的 5432 端口
+      nodePort: 30432
+  selector:
+    app: pgsql-kitig
+  type: NodePort

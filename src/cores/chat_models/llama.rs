@@ -27,7 +27,7 @@ impl Completions for Llama{
         };
 
         // 2. Build the request body
-        let stream = req_body.stream.unwrap_or(true);
+        let stream = req_body.stream.unwrap_or(false);
         let mut request_body = json!({
             "model": service.model_name,
             "temperature": req_body.temperature.unwrap_or(0.7),
