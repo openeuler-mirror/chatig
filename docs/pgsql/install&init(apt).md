@@ -27,6 +27,8 @@ psql
 CREATE USER chatig WITH PASSWORD 'chatig';
 CREATE DATABASE chatig OWNER chatig;
 \q
+
+exit
 ```
 
 **（3）配置PostgreSQL允许外部连接**
