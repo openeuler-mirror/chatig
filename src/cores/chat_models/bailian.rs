@@ -5,6 +5,7 @@ use reqwest::Client;
 use serde_json::json;
 use chrono::Utc;
 use chrono_tz::Asia::Shanghai;
+use std::time::Duration;
 
 use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::chat_models::chat_controller::Completions;
@@ -37,7 +38,13 @@ impl Completions for Bailian{
 
         // 3. Use reqwest to initiate a POST request
         let start_time = Utc::now().with_timezone(&Shanghai);
-        let client = Client::new();
+        
+        let client = Client::builder()
+            .timeout(Duration::from_secs(300)) // 设置总超时时间为300秒
+            .connect_timeout(Duration::from_secs(10)) // 设置连接超时时间为10秒（可选）
+            .build()
+            .map_err(|err| ErrorInternalServerError(format!("Failed to build client: {}", err)))?;
+
         let response = match client.post(&reqwest_url)
             .header("Authorization", format!("Bearer {}", api_key))
             .header("Content-Type", "application/json")
