@@ -7,14 +7,11 @@
 
 ```bash
 # 安装依赖包
-yum install -y postgresql-server postgresql
-
-apt install postgresql-client-14
-
-# 初始化数据库
-/usr/bin/postgresql-setup --initdb
+sudo apt update
+sudo apt install postgresql postgresql-contrib
 
 # 服务自启动
+systemctl status postgresql
 systemctl start postgresql
 systemctl enable postgresql
 ```
@@ -30,6 +27,8 @@ psql
 CREATE USER chatig WITH PASSWORD 'chatig';
 CREATE DATABASE chatig OWNER chatig;
 \q
+
+exit
 ```
 
 **（3）配置PostgreSQL允许外部连接**
@@ -37,9 +36,6 @@ CREATE DATABASE chatig OWNER chatig;
 修改pg_hba.conf，将host设置为md5认证：
 
 ```bash
-# redhat series
-vim /var/lib/pgsql/data/pg_hba.conf
-
 # ubuntu series
 vim /etc/postgresql/14/main/pg_hba.conf
 
@@ -61,7 +57,7 @@ host    all             all             ::1/128                 md5
 host    chatig    chatig    192.168.0.168/24    md5
 host    chatig    chatig    172.17.0.4/24       md5
 ```
-  
+
   这条规则允许 IP 地址 `192.168.0.168` 连接 `chatig` 数据库，并使用 MD5 验证。
 
 - 在 Docker 容器内，使用 `psql` 或其他 PostgreSQL 客户端连接到宿主机的数据库：
@@ -81,7 +77,7 @@ sudo systemctl reload postgresql
 修改postgresql.conf，确保你已经启用了所有网络接口的监听（允许外部连接）。检查或添加：
 
 ```bash
-vim /var/lib/pgsql/data/postgresql.conf
+vim /etc/postgresql/14/main/postgresql.conf
 
 listen_addresses = '*'
 ```
