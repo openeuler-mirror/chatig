@@ -2,22 +2,20 @@ use actix_web::{web, HttpResponse, Error};
 use actix_web::error::{ErrorInternalServerError, ErrorBadRequest};
 use async_trait::async_trait;
 use reqwest::Client;
-use serde_json::json;
 use chrono::Utc;
 use chrono_tz::Asia::Shanghai;
 use std::time::Duration;
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
 use crate::cores::control::services::ServiceManager;
-use crate::cores::chat_models::chat_controller::Completions;
-use crate::cores::chat_models::chat_utils::{completions_response_stream, completions_response_non_stream, add_stream_options};
+use crate::cores::chat_models::chat_controller::{Completions, ChatCompletionRequest};
+use crate::cores::chat_models::chat_utils::{completions_response_stream, completions_response_non_stream, get_request_body, RequestInfo};
 
-pub struct GLM{
+pub struct Llama{
     pub model_name: String,
 }
 
 #[async_trait]
-impl Completions for GLM{
+impl Completions for Llama{
     async fn completions(&self, req_body: web::Json<ChatCompletionRequest>, userid: String, appkey: String) -> Result<HttpResponse, Error> {
         // 1. Read the model's parameter configuration
         let service_manager = ServiceManager::default();
@@ -28,27 +26,8 @@ impl Completions for GLM{
         };
 
         // 2. Build the request body
-        let stream = req_body.stream.unwrap_or(false).clone();
-        let mut request_body = json!({
-            "model": service.model_name,
-            "temperature": req_body.temperature.unwrap_or(0.95).clone(),
-            "n": req_body.n.unwrap_or(1).clone(),
-            "stream": stream,
-            "stop": null,
-            "presence_penalty": req_body.presence_penalty.unwrap_or(0).clone(),
-            "frequency_penalty": req_body.frequency_penalty.unwrap_or(0).clone(),
-            "logit_bias": null,
-            "user": req_body.user.clone(),
-            // "max_tokens": req_body.max_tokens.unwrap_or(max_tokens).clone(),
-            "messages": req_body.messages
-        });
+        let (request_body, is_stream) = get_request_body(service.model_name, req_body);
 
-        // Append stream-specific options if needed
-        if stream {
-            request_body = add_stream_options(request_body, service.servicetype);
-        }
-
-        let start_time = Utc::now().with_timezone(&Shanghai);
         // 3. Use reqwest to initiate a POST request
         let client = Client::builder()
             .timeout(Duration::from_secs(300)) // 设置总超时时间为300秒
@@ -56,6 +35,7 @@ impl Completions for GLM{
             .build()
             .map_err(|err| ErrorInternalServerError(format!("Failed to build client: {}", err)))?;
 
+        let start_time = Utc::now().with_timezone(&Shanghai);
         let response = match client.post(service.url)
             .header("Content-Type", "application/json")
             .json(&request_body)
@@ -64,14 +44,26 @@ impl Completions for GLM{
                 Ok(resp) => resp, 
                 Err(err) => return Err(ErrorInternalServerError(format!("Request failed: {}", err))),
             };
+
+        if !response.status().is_success() {
+            return Err(ErrorInternalServerError(format!("{} request failed: {}", self.model_name, response.status())));
+        }
         
         // 4. Return the response based on the request's streaming status
-        if stream {
+        let req_info = RequestInfo{
+            req_model_name: self.model_name.clone(),
+            userid: userid.clone(),
+            appkey: appkey.clone(),
+            start_time: start_time,
+        };
+        if is_stream{
             // Handle streaming response requests
-            completions_response_stream(req_body, response, userid, appkey, start_time).await
+            // let body_stream = response.bytes_stream();
+            // Ok(HttpResponse::Ok().content_type("text/event-stream").streaming(body_stream))
+            completions_response_stream(response, req_info).await
         } else {
-            // handle non-streaming response requests
-            completions_response_non_stream(req_body, response, userid, appkey, start_time).await
+            // Handle non-streaming response requests
+            completions_response_non_stream(response, req_info).await
         }
     }
 }

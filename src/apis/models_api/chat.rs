@@ -3,18 +3,14 @@ use actix_web::error::ErrorBadRequest;
 use log::{info, error};
 use std::sync::Arc;
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
 
 use crate::cores::chat_models::chat_controller::Completions;
-use crate::cores::chat_models::qwen::Qwen;
-use crate::cores::chat_models::glm::GLM;
+use crate::cores::chat_models::support_models::{qwen, glm, llama, bailian, deepseek};
 use crate::middleware::auth4model::Auth4ModelMiddleware;
 use crate::middleware::qos::Qos;
 use crate::utils::log::log_request;
-use crate::cores::chat_models::llama::Llama;
-use crate::cores::chat_models::bailian::Bailian;
-use crate::cores::chat_models::deepseek::DeepSeek;
 
 pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>, qos: Arc<Qos>) {
     cfg.service(
@@ -92,11 +88,11 @@ pub async fn completions(req: HttpRequest, req_body: web::Json<ChatCompletionReq
 
     //  3. Call the underlying API and return a unified data format
     let model: LLM = match parts[0] {
-        "Qwen" => LLM::new(Box::new(Qwen {model_name: parts[1].to_string()})),
-        "GLM" => LLM::new(Box::new(GLM {model_name: parts[1].to_string()})),
-        "meta-llama" => LLM::new(Box::new(Llama {model_name: parts[1].to_string()})),
-        "Bailian" => LLM::new(Box::new(Bailian {})),
-        "deepseek-ai" => LLM::new(Box::new(DeepSeek {model_name: parts[1].to_string()})),
+        "Qwen" => LLM::new(Box::new(qwen::Qwen {model_name: parts[1].to_string()})),
+        "GLM" => LLM::new(Box::new(glm::GLM {model_name: parts[1].to_string()})),
+        "meta-llama" => LLM::new(Box::new(llama::Llama {model_name: parts[1].to_string()})),
+        "Bailian" => LLM::new(Box::new(bailian::Bailian {model_name: parts[1].to_string()})),
+        "deepseek-ai" => LLM::new(Box::new(deepseek::DeepSeek {model_name: parts[1].to_string()})),
         _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", parts[0]))),
     };
 

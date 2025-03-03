@@ -10,7 +10,7 @@ use futures::stream::StreamExt;    // For try_future and try_next
 use std::fs;
 use std::path::Path;
 
-use crate::apis::models_api::schemas::{ChatCompletionRequest, Message};
+use crate::cores::chat_models::chat_controller::{ChatCompletionRequest, Message};
 use crate::cores::schemas::{OpenAIStreamResponse, UploadTempDocsResponse, 
     FileChatResponse, FileStreamChatResponse, FileDocStreamChatResponse, OpenAIDeltaMessage, OpenAIStreamChoice};
 use crate::cores::files_apps::file_controller::FileChatController;

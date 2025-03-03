@@ -3,10 +3,10 @@ use utoipa::OpenApi;
 use crate::apis::models_api;
 use crate::apis::control_api;
 use crate::meta::models::Model;
-use crate::apis::models_api::schemas::{ChatCompletionRequest, Message, EmbeddingRequest, 
-    EmbeddingResponse, EmbeddingData,Usage};
+use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse, EmbeddingData};
+use crate::cores::chat_models::chat_controller::{ChatCompletionRequest, Message,Usage};
 use crate::apis::control_api::models::{ModelErrorDetails, ModelErrorName};
-use crate::cores::schemas::{CompletionsResponse, CompletionsChoice, CompletionsAssistantMessage, 
+use crate::cores::chat_models::chat_controller::{CompletionsResponse, CompletionsChoice, CompletionsAssistantMessage, 
     CompletionsUsage, CompletionsStreamResponse, CompletionsStreamChoice, CompletionsDelta};
 use crate::apis::schemas::ErrorResponse;
 use crate::meta::files::traits::File;
