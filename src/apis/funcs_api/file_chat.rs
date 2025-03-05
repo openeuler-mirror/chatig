@@ -2,7 +2,7 @@ use actix_web::{post, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorBadRequest;
 use actix_multipart::form::MultipartForm;
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
 use crate::cores::files_apps::file_controller::FileChatController;
 use crate::cores::files_apps::chatchat::ChatChatFile;

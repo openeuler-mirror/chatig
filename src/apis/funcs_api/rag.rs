@@ -1,7 +1,7 @@
 use actix_web::{post, web, Error, HttpResponse};
 use actix_web::error::ErrorBadRequest;
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 use crate::apis::schemas::ErrorResponse;
 
 use crate::cores::rag_apps;

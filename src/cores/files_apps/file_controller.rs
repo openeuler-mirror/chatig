@@ -4,7 +4,7 @@ use async_trait::async_trait;
 
 use serde::Deserialize;
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 
 #[derive(Debug, Deserialize)]
 pub struct Metadata {
