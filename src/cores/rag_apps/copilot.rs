@@ -6,7 +6,7 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::stream::StreamExt;    // For try_future
 
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 use crate::cores::schemas::{GetAnswerResponse, GetStreamAnswerResponse};
 use crate::configs::settings::load_server_config;
 

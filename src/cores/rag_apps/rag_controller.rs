@@ -1,6 +1,6 @@
 use actix_web::{web, Error, HttpResponse};
 use async_trait::async_trait;
-use crate::apis::models_api::schemas::ChatCompletionRequest;
+use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
 
 #[async_trait]
 pub trait RAGController: Send + Sync {
