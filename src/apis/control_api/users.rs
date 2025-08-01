@@ -14,16 +14,20 @@ struct DeleteUserResponse {
 }
 
 #[allow(dead_code)]
-pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(list_users)
-        .service(modify_user)
-        .service(retrieve_user)
-        .service(delete_user)
-        .service(create_user);
+pub fn configure(cfg: &mut web::ServiceConfig, auth4manage: Arc<Auth4ManageMiddleware>) {
+    cfg.service(
+        web::scope("/v1/organization/users")
+            .service(list_users)
+            .service(modify_user)
+            .service(retrieve_user)
+            .service(delete_user)
+            .service(create_user)
+            .wrap(auth4manage),
+    );
 }
 
 // create user
-#[post("/v1/organization/users")]
+#[post("")]
 async fn create_user(user: web::Json<UserObjectDto>) -> Result<impl Responder, Error> {
     // 1. create user object in the database
 
@@ -40,7 +44,7 @@ async fn create_user(user: web::Json<UserObjectDto>) -> Result<impl Responder, E
 }
 
 // list users
-#[get("/v1/organization/users")]
+#[get("")]
 async fn list_users(headers: HttpRequest) -> Result<impl Responder, Error> {
     // 1. get parameters from query string
     let query = headers.query_string();
@@ -63,7 +67,7 @@ async fn list_users(headers: HttpRequest) -> Result<impl Responder, Error> {
 
 
 // modify user
-#[post("/v1/organization/users/{user_id}")]
+#[post("{user_id}")]
 async fn modify_user(user_id: web::Path<String>, role: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. modify user object in the database
     let user_id = user_id.into_inner();
@@ -83,7 +87,7 @@ async fn modify_user(user_id: web::Path<String>, role: web::Json<HashMap<String,
 
 
 // retrieve user
-#[get("/v1/organization/users/{user_id}")]
+#[get("{user_id}")]
 async fn retrieve_user(user_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. retrieve user object from the database
     let user_id = user_id.into_inner();
@@ -100,7 +104,7 @@ async fn retrieve_user(user_id: web::Path<String>) -> Result<impl Responder, Err
 }
 
 // delete user
-#[delete("/v1/organization/users/{user_id}")]
+#[delete("{user_id}")]
 async fn delete_user(user_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. delete user object from the database
     let user_id = user_id.into_inner();

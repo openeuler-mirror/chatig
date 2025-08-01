@@ -4,67 +4,20 @@ use std::io::Read;
 use once_cell::sync::Lazy;
 use serde_yaml;
 
-// ---------------------------------------------- Server Config ----------------------------------------------
-// ChatChat API
-#[derive(Debug, Deserialize, Clone)]
-pub struct ChatChat{
-    pub kb_chat: String,
-    pub upload_temp_docs: String,
-    pub file_chat: String,
-    pub model_name: String,
-}
-
-// EulerCopilot API
-#[derive(Debug, Deserialize, Clone)]
-pub struct EulerCopilot{
-    pub get_answer: String,
-    pub get_stream_answer: String,
-}
-
-// mindie API
-#[derive(Debug, Deserialize, Clone)]
-pub struct Embeddings{
-    // pub get_embedding: String,
-    #[allow(dead_code)]
-    pub model_name: String,
-}
-
-#[derive(Debug, Deserialize, Clone)]
-pub struct Images{
-    // pub get_image: String,
-    #[allow(dead_code)]
-    pub model_name: String,
-}
-
-// Configuration file
-#[derive(Deserialize, Debug, Clone)]
-pub struct ServerConfig {
-    pub chatchat: ChatChat,
-    pub euler_copilot: EulerCopilot,
-    // pub embeddings: Embeddings,
-    // pub images: Images,
-}
-
-pub fn load_server_config() -> Result<ServerConfig, Box<dyn std::error::Error>> {
-    let config_path = if metadata("/etc/chatig/configs.yaml").is_ok() {
-        "/etc/chatig/servers_configs.yaml"
-    } else {
-        "src/configs/servers_configs.yaml"
-    };
-    let mut file = File::open(config_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let config: ServerConfig = serde_yaml::from_str(&contents)?;
-    Ok(config)
-}
-
 // ---------------------------------------------- Config ----------------------------------------------
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
 pub struct Config {
     pub temp_docs_path: String,
     pub port: u16,
+    pub metrics_port: u16,
+    pub ipv6_enabled: bool,
+    pub ipv6_port:u16,
     pub https_enabled: bool,
+    pub request_timeout: u64,
+    pub connection_timeout: u64,
+    pub request_retry: u32,
+    pub model_health_check_interval: u64,
     pub database: String,
     pub connection_num: u32,
     pub database_type: String,
@@ -76,6 +29,7 @@ pub struct Config {
     pub auth_remote_enabled: bool,
     pub auth_remote_server: String,
     pub coil_enabled: bool,
+    pub metrics_enable: bool,
     pub cloud_region_id: String,
     pub cloud_region_name: String,
     pub server_cert_file: String,
@@ -85,7 +39,9 @@ pub struct Config {
     pub connections_per_server: usize,
     pub auth_cache_time: u64,
     pub auth_cache_capacity: usize,
-    pub localuserid: String,
+    pub mind_ie_metrics_update_interval: usize,
+    pub auth_cache_redis: bool,
+    pub auth_cache_redis_url: String,
 }
 
 impl Default for Config {
@@ -93,7 +49,14 @@ impl Default for Config {
         Config {
             temp_docs_path: "/root/.chatig/data/temp_docs".to_string(),
             port: 8081,
+            metrics_port: 8082,
+            ipv6_enabled: false,
+            ipv6_port: 8003,
             https_enabled: false,
+            request_timeout: 300,
+            connection_timeout: 10,
+            request_retry: 3,
+            model_health_check_interval:300,
             database: "postgres://chatig:chatig@localhost/chatig".to_string(),
             connection_num: 10,
             database_type: "pgsql".to_string(),
@@ -105,6 +68,7 @@ impl Default for Config {
             auth_remote_enabled: false,
             auth_remote_server: "".to_string(),
             coil_enabled: false,
+            metrics_enable: false,
             cloud_region_id: "".to_string(),
             cloud_region_name: "".to_string(),
             server_cert_file: "/etc/chatig/https/server_cert_file.crt".to_string(),
@@ -116,7 +80,9 @@ impl Default for Config {
             connections_per_server: 32,
             auth_cache_time: 1200,
             auth_cache_capacity: 3000,
-            localuserid: "111111".to_string()
+            mind_ie_metrics_update_interval: 1,
+            auth_cache_redis:false,
+            auth_cache_redis_url: "".to_string(),
         }
     }
 }

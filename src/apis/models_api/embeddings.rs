@@ -45,7 +45,7 @@ impl EMB {
 )]
 
 // Handle the POST request for /v1/embeddings.
-#[post("/embeddings")]
+#[post("")]
 async fn v1_embeddings(req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
     // 1. Validate the required fields.
     if req_body.input.is_empty() || req_body.model.is_empty() {

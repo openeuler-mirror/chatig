@@ -3,12 +3,13 @@
 # Used to store uploaded files
 temp_docs_path: "/root/.chatig/data/temp_docs"
 
-# admin password
-apikey:
-  value: "chatig"
-
 # main server port
 port: 8001
+metrics_port: 8002
+
+# ipv6 config
+ipv6_enabled: false
+ipv6_port: 8003
 
 # HTTPS configuration
 https_enabled: false
@@ -16,7 +17,11 @@ server_cert_file: "/etc/chatig/https/server_cert_file.crt"
 chain_cert_file: "/etc/chatig/https/chain_cert_file.crt"
 key_file: "/etc/chatig/https/key_file.key"
 
-# database
+# request timeout (seconds)
+request_timeout: 300
+connection_timeout: 10
+
+# database postgres://<用户名>:<密码>@<ip:port>/<数据库名>
 database: "postgres://chatig:chatig@localhost/chatig"
 connection_num: 10
 # pgsql/mysql
@@ -33,6 +38,9 @@ auth_remote_enabled: false
 auth_remote_server: ""
 auth_cache_time: 1200  #20min
 auth_cache_capacity: 3000
+auth_cache_redis: false # 开启后会把鉴权缓存放到redis，解决集群缓存一致性问题
+# redis://127.0.0.1:6379/
+auth_cache_redis_url: ""
 # cloud region
 cloud_region_id: ""
 cloud_region_name: ""
@@ -41,7 +49,10 @@ cloud_region_name: ""
 coil_enabled: false
 multi_ip: []
 connections_per_server: 32
-localuserid: "111111"
+
+#Prometheus metrics
+metrics_enable: false
+mind_ie_metrics_update_interval: 1
 
 # Log config
 refresh_rate: 30 seconds

@@ -2,11 +2,9 @@ use actix_web::{post, web, Error, HttpResponse, Responder};
 use actix_web::error::ErrorBadRequest;
 use actix_multipart::form::MultipartForm;
 
-use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
-use crate::apis::schemas::ErrorResponse;
-use crate::cores::files_apps::file_controller::FileChatController;
-use crate::cores::files_apps::chatchat::ChatChatFile;
-use crate::cores::files_apps::file_controller::UploadForm;
+use crate::cores::apps::files_chat::file_controller::{ChatCompletionRequest, FileChatController};
+use crate::cores::apps::files_chat::chatchat::ChatChatFile;
+use crate::cores::apps::files_chat::file_controller::UploadForm;
 
 #[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
