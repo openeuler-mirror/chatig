@@ -53,17 +53,8 @@ pub async fn create_model_limits(
     })
 }
 
-#[utoipa::path(
-    delete,
-    path = "/v1/limits/{model_name}",
-    responses(
-        (status = 200, body = HttpResponse),
-        (status = 404, body = ErrorResponse),
-        (status = 500, body = ErrorResponse),
-    )
-)]
 
-#[delete("/{model_name}")]
+#[delete("")]
 async fn delete_model_limits(
     model_name: web::Path<String>,
 ) -> Result<impl Responder, Error> {
@@ -87,7 +78,7 @@ async fn delete_model_limits(
     })
 }
 
-#[put("/{model_name:.*}")]
+#[put("")]
 async fn update_model_limits(
     limits: web::Json<Limits>,
 ) -> Result<impl Responder, Error> {
@@ -163,7 +154,7 @@ async fn get_all_model_limits() -> Result<impl Responder, Error> {
 )]
 
 // get https://***/v1/limits/{model_name}
-#[get("/{model_name:.*}")]
+#[post("/get")]
 async fn get_model_limits(
     model_name: web::Path<String>,
 ) -> Result<impl Responder, Error> {
