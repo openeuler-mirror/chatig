@@ -1,11 +1,9 @@
 use actix_web::{post, web, Error, HttpResponse};
 use actix_web::error::ErrorBadRequest;
 
-use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
-use crate::apis::schemas::ErrorResponse;
-
-use crate::cores::rag_apps;
-use crate::cores::rag_apps::rag_controller::RAGController;
+use crate::cores::apps::rag_chat::rag_controller::ChatCompletionRequest;
+use crate::cores::apps::rag_chat;
+use crate::cores::apps::rag_chat::rag_controller::RAGController;
 
 #[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
@@ -41,17 +39,15 @@ impl RAG {
 pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>) -> Result<HttpResponse, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
-        let error_response = ErrorResponse {
-            error: "Invalid request: model or messages cannot be empty.".into(),
-        };
+        let error_response = format!("Invalid request: model or messages cannot be empty.");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
     // 2. Call the underlying API and return a unified data format
     let model_name = req_body.model.clone();
     let rag :RAG = match model_name.as_str() {
-        "chatchat" => RAG::new(Box::new(rag_apps::chatchat::ChatChatRAG {})),
-        "Copilot" => RAG::new(Box::new(rag_apps::copilot::CopilotRAG {})),
+        "chatchat" => RAG::new(Box::new(rag_chat::chatchat::ChatChatRAG {})),
+        "Copilot" => RAG::new(Box::new(rag_chat::copilot::CopilotRAG {})),
         _ => return Err(ErrorBadRequest(format!("Unsupported model {}!", model_name))),
     };
         
@@ -62,7 +58,7 @@ pub async fn rag_chat_completions(req_body: web::Json<ChatCompletionRequest>) ->
             Ok(resp)
         }
         Err(err) => {
-            let error_response = ErrorResponse { error: format!("Failed to get response from kb_chat: {}", err), };
+            let error_response = format!("Failed to get response from kb_chat: {}", err);
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }

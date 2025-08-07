@@ -6,11 +6,9 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::stream::StreamExt;    // For try_future
 
-use crate::cores::chat_models::chat_controller::ChatCompletionRequest;
-use crate::cores::schemas::{GetAnswerResponse, GetStreamAnswerResponse};
-use crate::configs::settings::load_server_config;
+use crate::cores::apps::rag_chat::rag_controller::{GetAnswerResponse, GetStreamAnswerResponse, ChatCompletionRequest};
 
-use crate::cores::rag_apps::rag_controller::RAGController;
+use crate::cores::apps::rag_chat::rag_controller::RAGController;
 
 pub struct CopilotRAG;
 
@@ -43,9 +41,9 @@ impl RAGController for CopilotRAG {
 
         // Use reqwest to initiate a POST request
         let stream = req_body.stream.unwrap_or(false).clone();
-        let server_config = load_server_config()
-            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
-        let answer_url = if stream { &server_config.euler_copilot.get_stream_answer } else { &server_config.euler_copilot.get_answer };
+        let get_stream_answer_url = "http://localhost:8000/rag/get_stream_answer";      // TODO: Change to the real URL
+        let get_answer_url = "http://localhost:8000/rag/get_answer";                    // TODO: Change to the real URL
+        let answer_url = if stream { get_stream_answer_url } else { get_answer_url };
         let model = req_body.model.clone();
 
         let client = Client::new();

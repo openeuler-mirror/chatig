@@ -2,10 +2,8 @@ use actix_web::{get, delete, web, HttpResponse, Responder};
 use serde_json::json;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use std::sync::Arc;
 
-use crate::cores::models::{get_model, get_models};
-use crate::middleware::auth4manage::Auth4ManageMiddleware;
+use crate::cores::control::models::ModelManager;
 
 #[derive(Deserialize,Serialize,ToSchema)]
 pub struct ModelErrorDetails {
@@ -19,10 +17,8 @@ pub struct ModelErrorName {
     pub model_name: String,
 }
 
-pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageMiddleware>) {
-    cfg.service(
-        web::scope("/v1/models")
-            .wrap(auth_middleware) // 应用中间件
+pub fn configure(cfg: &mut web::ServiceConfig) {
+    cfg.service(web::scope("/v1/models")
             .service(models)
             .service(model_info)
             .service(delete_model),
@@ -41,7 +37,8 @@ pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ManageM
 // Lists the currently available models, and provides basic information about each one such as the owner and availability.
 #[get("")]
 pub async fn models() -> impl Responder {
-    match get_models().await {
+    let model_manager = ModelManager::default();
+    match model_manager.get_models().await {
         Ok(models) => {
             // 成功获取模型数据，返回 JSON 响应
             HttpResponse::Ok().json(models)
@@ -72,7 +69,8 @@ pub async fn models() -> impl Responder {
 pub async fn model_info(path: web::Path<String>) -> impl Responder {
     let model_name = path.into_inner(); // 提取路径参数
     // 调用封装的函数查询指定模型
-    match get_model(&model_name).await {
+    let model_manager = ModelManager::default();
+    match model_manager.get_model(&model_name).await {
         Ok(Some(model)) => {
             // 查询成功，返回模型信息
             HttpResponse::Ok().json(model)

@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use crate::meta::services::traits::{ServiceConfig, ServicesTrait};
+use crate::meta::services::traits::{Services, ServicesTrait};
 use crate::meta::services::impls::ServicesImpl;
 
 pub struct ServiceManager {
@@ -25,7 +25,7 @@ impl ServiceManager{
         self.services.load_services_table().await
     }
 
-    pub async fn create_service(&self, service: &ServiceConfig) -> Result<(), Box<dyn Error>> {
+    pub async fn create_service(&self, service: &Services) -> Result<(), Box<dyn Error>> {
         self.services.create_service(service).await
     }
 
@@ -33,19 +33,23 @@ impl ServiceManager{
         self.services.delete_service(service_id).await
     }
 
-    pub async fn update_service(&self, service: &ServiceConfig) -> Result<u64, Box<dyn Error>> {
+    pub async fn update_service(&self, service: &Services) -> Result<u64, Box<dyn Error>> {
         self.services.update_service(service).await
     }
 
-    pub async fn get_service(&self, service_id: &str) -> Result<Option<ServiceConfig>, Box<dyn Error>> {
+    pub async fn get_service(&self, service_id: &str) -> Result<Option<Services>, Box<dyn Error>> {
         self.services.get_service(service_id).await
     }
 
-    pub async fn get_service_by_model(&self, model_name: &str) -> Result<Option<ServiceConfig>, Box<dyn Error>> {
-        self.services.get_service_by_model(model_name).await
+    pub async fn get_service_by_model(&self, model_name: &str, input_tokens: Option<f32>, aicpid_json: String) -> Result<Option<Services>, Box<dyn Error>> {
+        self.services.get_service_by_model(model_name, input_tokens, aicpid_json).await
     }
 
-    pub async fn get_all_services(&self) -> Result<Vec<ServiceConfig>, Box<dyn Error>> {
+    pub async fn get_all_services(&self) -> Result<Vec<Services>, Box<dyn Error>> {
         self.services.get_all_services().await
     }
+
+    // pub async fn get_id_by_model(&self, model_name: &str) -> Result<String, Box<dyn Error>> {
+    //     self.services.get_id_by_model(model_name).await
+    // }
 }

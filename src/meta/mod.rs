@@ -5,5 +5,4 @@ pub mod users;
 pub mod connection;
 pub mod services;
 pub mod models;
-pub mod middleware;
-pub mod qos;
+pub mod services_detail;

@@ -1,19 +1,18 @@
-use actix_web::{post, web, Error, HttpResponse, Responder};
+use actix_web::{
+    post, web, Error, HttpResponse, Responder, HttpRequest, HttpMessage,
+};
 use actix_web::error::ErrorBadRequest;
-use std::sync::Arc;
+use std::collections::HashMap;
 
-use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse};
-use crate::apis::schemas::ErrorResponse;
-use crate::cores::embedding_models::embedding_controller::EmbeddingProvider;
-use crate::cores::embedding_models::bge::Bge;
-use crate::middleware::auth4model::Auth4ModelMiddleware;
+use crate::cores::models::embedding::embedding_controller::{EmbeddingRequest, EmbeddingResponse};
+use crate::cores::models::embedding::embedding_controller::EmbeddingProvider;
+use crate::cores::models::embedding::support_engines::std_embedding::StdEmbedding;
 
 // Configure the actix_web service routes.
 #[allow(dead_code)]
-pub fn configure(cfg: &mut web::ServiceConfig, auth_middleware: Arc<Auth4ModelMiddleware>) {
+pub fn configure(cfg: &mut web::ServiceConfig,) {
     cfg.service(
         web::scope("/v1/embeddings") 
-            .wrap(auth_middleware)  // 在这个作用域内应用中间件
             .service(v1_embeddings)
     );
 }
@@ -28,8 +27,8 @@ impl EMB {
         EMB { model }
     }
 
-    async fn embedding_provider(&self, req_body: web::Json<EmbeddingRequest>) -> Result<EmbeddingResponse, String> {
-        self.model.embedding_provider(req_body).await
+    async fn embedding_provider(&self, req_body: web::Json<EmbeddingRequest>, aicpid: String) -> Result<EmbeddingResponse, Error> {
+        self.model.embedding_provider(req_body, aicpid).await
     }
 }
 
@@ -46,32 +45,35 @@ impl EMB {
 
 // Handle the POST request for /v1/embeddings.
 #[post("")]
-async fn v1_embeddings(req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
+async fn v1_embeddings(req: HttpRequest, req_body: web::Json<EmbeddingRequest>) -> Result<impl Responder, Error> {
+
     // 1. Validate the required fields.
-    if req_body.input.is_empty() || req_body.model.is_empty() {
-        let error_response = ErrorResponse {
-            error: "Invalid request: input and model are required fields".into(),
-        };
+    if (req_body.input.as_ref().map_or(true, |v| v.is_empty()) 
+    && req_body.inputs.as_ref().map_or(true, |s| s.is_empty()))
+    || req_body.model.is_empty() {
+        let error_response = format!("Invalid embedding request: input and model are required fields");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
+    let aicpid = req.extensions().get::<HashMap<&str, String>>().and_then(|data| data.get("aicpid").cloned()).unwrap_or_else(|| "[]".to_string());
 
-    // 2. Call the underlying API and return a unified data format
-    let model_name = req_body.model.clone();
-    let model_series = model_name.split("/").next().unwrap_or("");
+    // 2. Parse the model name and series from the model field (Qwen/Qwen2.5-7B-Instruct)
+    let (model_series, model_name) = match req_body.model.split_once('/') {
+        Some((series, name)) => (series, name),
+        None => ("std", req_body.model.as_str()),
+    };
+
+    // 3. Call the underlying API and return a unified data format
     let model: EMB = match model_series {
-        "bge-large-zh-v1.5" => EMB::new(Box::new(Bge {})),
-        "bert-large-uncased" => EMB::new(Box::new(Bge {})),
+        "BAAI" | "std" => EMB::new(Box::new(StdEmbedding {active_model: model_name.to_string()})),
         _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", model_series))),
     };
 
-    // 3. Send the request to the model service
-    let response = model.embedding_provider(req_body).await;
+    // 4. Send the request to the model service
+    let response = model.embedding_provider(req_body, aicpid).await;
     match response {
         Ok(resp) => Ok(HttpResponse::Ok().json(resp)),
         Err(err) => {
-            let error_response = ErrorResponse {
-                error: format!("Failed to get response from {} embeddings: {}", model_name, err),
-            };
+            let error_response = format!("Failed to get response: {}", err);
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }

@@ -40,9 +40,7 @@ pub async fn upload_file(MultipartForm(form): MultipartForm<UploadForm>) -> Resu
     match response {
         Ok(resp) => Ok(resp),
         Err(err) => {
-            let error_response = ErrorResponse {
-                error: format!("Failed to get response from upload_temp_docs: {}", err),
-            };
+            let error_response = format!("Failed to get response from upload_temp_docs: {}", err);
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }
@@ -63,9 +61,7 @@ pub async fn upload_file(MultipartForm(form): MultipartForm<UploadForm>) -> Resu
 pub async fn file_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<impl Responder, Error> {
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.messages.is_empty() {
-        let error_response = ErrorResponse {
-            error: "Invalid request: model or messages cannot be empty.".into(),
-        };
+        let error_response = format!("Invalid request: model or messages cannot be empty.");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
 
@@ -81,9 +77,7 @@ pub async fn file_chat(req_body: web::Json<ChatCompletionRequest>) -> Result<imp
     match response {
         Ok(resp) => Ok(resp),
         Err(err) => {
-            let error_response = ErrorResponse {
-                error: format!("Failed to get response from {} chat completions: {}", model_name, err),
-            };
+            let error_response = format!("Failed to get response from {} chat completions: {}", model_name, err);
             Ok(HttpResponse::InternalServerError().json(error_response))
         }
     }  

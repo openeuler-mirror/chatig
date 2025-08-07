@@ -12,6 +12,7 @@ use std::sync::Arc;
 use std::any::Any;
 use std::fmt::{self, Debug};
 use std::error::Error;
+use std::collections::HashMap;
 use crate::configs::settings::GLOBAL_CONFIG;
 
 pub(crate) static DB_MANAGER: OnceCell<Arc<RwLock<Box<dyn DbManager<Connection = Box<dyn Any + Send + Sync>>>>>> = OnceCell::new();
@@ -259,6 +260,78 @@ impl DBCrud {
     example:
 
     use serde_json::json;
+    use std::collections::HashMap;
+
+    #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
+    pub struct User {
+        pub id: String,
+        pub name: String,
+        pub age: i32,
+        pub email: String,
+    }
+
+    let mut filters = HashMap::new();
+    filters.insert("name", &json!("Alice")); // 查询 name = "Alice"
+    filters.insert("age", &json!(25));       // 查询 age = 25
+
+    let user = DBCrud::get_from_multis::<User>("users", filters).await;
+    */
+    // pub async fn get_from_multis<T: DeserializeOwned>(
+    //     table_name: &str,
+    //     filters: HashMap<&str, &JsonValue>, // 使用 HashMap 来存储多个字段和对应的值
+    // ) -> Result<Option<T>, Box<dyn Error>> 
+    // where
+    //     T: for<'q> sqlx::FromRow<'q, sqlx::postgres::PgRow>
+    //         + for<'q> sqlx::FromRow<'q, sqlx::mysql::MySqlRow>
+    //         + DeserializeOwned
+    //         + Send
+    //         + Unpin,
+    // {
+    //     let conn = get_db_connection().await?;
+    //     let dbtype = &*GLOBAL_CONFIG.database_type;
+    
+    //     let where_clause = filters.iter()
+    //         .enumerate()
+    //         .map(|(i, (column, _))| {
+    //             if dbtype == "pgsql" {
+    //                 format!("{} = ${}", column, i + 1)
+    //             } else {
+    //                 format!("{} = ?", column)
+    //             }
+    //         })
+    //         .collect::<Vec<_>>()
+    //         .join(" AND ");
+    
+    //     let query_str = format!(
+    //         "SELECT * FROM {} WHERE {}",
+    //         table_name,
+    //         where_clause
+    //     );
+    
+    //     let result = match conn {
+    //         DbConnection::MySql(mut mysql_conn) => {
+    //             let mut sql_query = query_as::<_, T>(&query_str);
+    //             for value in filters.values() {
+    //                 sql_query = Self::bind_value_query_as(sql_query, value);
+    //             }
+    //             sql_query.fetch_optional(&mut *mysql_conn).await?
+    //         }
+    //         DbConnection::Postgres(mut pg_conn) => {
+    //             let mut sql_query = query_as::<_, T>(&query_str);
+    //             for value in filters.values() {
+    //                 sql_query = Self::bind_value_query_as(sql_query, value);
+    //             }
+    //             sql_query.fetch_optional(&mut *pg_conn).await?
+    //         }
+    //     };
+    
+    //     Ok(result)
+    // }
+
+    /*
+    example:
+
+    use serde_json::json;
 
     #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
     pub struct Model {
@@ -348,6 +421,104 @@ impl DBCrud {
             }
         };
 
+        Ok(result)
+    }
+
+    /*
+    example:
+
+    #[derive(Serialize, Deserialize, Debug, Clone, FromRow)]
+    pub struct UserObject {
+        pub id: String,
+        pub object: String,
+        pub name: String,
+        pub email: String,
+        pub role: String,
+        pub added_at: i64, // Adjust type based on actual DB schema
+    }
+
+    let conditions = Some(HashMap::from([
+        ("object", &json!("user")),
+        ("role", &json!("admin")),
+    ]));
+
+    let order_by = Some(("added_at", "DESC")); // Optional ordering
+    let limit = 10; // Number of records to fetch
+
+    let users = DBCrud::list_with_pagination::<UserObject>(
+        "user_object",
+        conditions,
+        order_by,
+        limit,
+    ).await;
+    */
+    pub async fn list_with_pagination<T: DeserializeOwned>(
+        table_name: &str,
+        conditions: Option<HashMap<&str, &JsonValue>>, // Optional filter conditions
+        order_by: Option<(&str, &str)>, // Optional (column, direction) e.g., ("id", "ASC")
+        limit: i64, // Number of records to fetch
+    ) -> Result<Vec<T>, Box<dyn Error>>
+    where
+        T: for<'q> sqlx::FromRow<'q, sqlx::postgres::PgRow>
+            + for<'q> sqlx::FromRow<'q, sqlx::mysql::MySqlRow>
+            + DeserializeOwned
+            + Send
+            + Unpin,
+    {
+        let conn = get_db_connection().await?;
+        let dbtype = &*GLOBAL_CONFIG.database_type;
+    
+        let mut query_str = format!("SELECT * FROM {}", table_name);
+        let mut params: Vec<&JsonValue> = Vec::new();
+    
+        if let Some(conds) = conditions {
+            let conds_str: Vec<String> = conds
+                .iter()
+                .enumerate()
+                .map(|(i, (col, _))| {
+                    if dbtype == "pgsql" {
+                        format!("{} > ${}", col, i + 1)
+                    } else {
+                        format!("{} > ?", col)
+                    }
+                })
+                .collect();
+            if !conds_str.is_empty() {
+                query_str.push_str(&format!(" WHERE {}", conds_str.join(" AND ")));
+            }
+            params.extend(conds.values());
+        }
+    
+        if let Some((col, direction)) = order_by {
+            query_str.push_str(&format!(" ORDER BY {} {}", col, direction));
+        }
+    
+        query_str.push_str(&format!(
+            " LIMIT {}",
+            if dbtype == "pgsql" { format!("${}", params.len() + 1) } else { "?".to_string() }
+        ));
+    
+        let result = match conn {
+            DbConnection::MySql(mut mysql_conn) => {
+                let mut sql_query = query_as::<_, T>(&query_str);
+                for value in params {
+                    sql_query = Self::bind_value_query_as(sql_query, value);
+                }
+                let limit_json = JsonValue::Number(limit.into());
+                sql_query = Self::bind_value_query_as(sql_query, &limit_json);
+                sql_query.fetch_all(&mut *mysql_conn).await?
+            }
+            DbConnection::Postgres(mut pg_conn) => {
+                let mut sql_query = query_as::<_, T>(&query_str);
+                for value in params {
+                    sql_query = Self::bind_value_query_as(sql_query, value);
+                }
+                let limit_json = JsonValue::Number(limit.into());
+                sql_query = Self::bind_value_query_as(sql_query, &limit_json);
+                sql_query.fetch_all(&mut *pg_conn).await?
+            }
+        };
+    
         Ok(result)
     }
 

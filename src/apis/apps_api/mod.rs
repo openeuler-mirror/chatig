@@ -1,3 +1,2 @@
 pub mod file_chat;
-pub mod rag;
-pub mod metrics;
+pub mod rag_chat;

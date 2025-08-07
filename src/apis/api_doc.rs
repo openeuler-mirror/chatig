@@ -2,13 +2,12 @@ use utoipa::OpenApi;
 
 use crate::apis::models_api;
 use crate::apis::control_api;
-use crate::meta::models::Model;
-use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse, EmbeddingData};
-use crate::cores::chat_models::chat_controller::{ChatCompletionRequest, Message,Usage};
+use crate::meta::models::traits::Model; 
+use crate::cores::models::embedding::embedding_controller::{EmbeddingRequest, EmbeddingResponse, EmbeddingData};
+use crate::cores::models::chat::chat_controller::{ChatCompletionRequest, Message};
 use crate::apis::control_api::models::{ModelErrorDetails, ModelErrorName};
-use crate::cores::chat_models::chat_controller::{CompletionsResponse, CompletionsChoice, CompletionsAssistantMessage, 
+use crate::cores::models::chat::chat_controller::{CompletionsResponse, CompletionsChoice, CompletionsAssistantMessage, 
     CompletionsUsage, CompletionsStreamResponse, CompletionsStreamChoice, CompletionsDelta};
-use crate::apis::schemas::ErrorResponse;
 use crate::meta::files::traits::File;
 
 
@@ -28,10 +27,11 @@ use crate::meta::files::traits::File;
         //funcs_api::rag::rag_chat_completions,
     ),
     components(
-        schemas(Model, ChatCompletionRequest, Message, ErrorResponse, EmbeddingRequest, EmbeddingResponse, 
-            EmbeddingData, Usage, ModelErrorDetails, ModelErrorName, File, CompletionsResponse, CompletionsChoice,
-            CompletionsAssistantMessage, CompletionsUsage, CompletionsStreamResponse, CompletionsStreamChoice, CompletionsDelta)
+        schemas(Model, ChatCompletionRequest, Message, EmbeddingRequest, EmbeddingResponse, 
+            EmbeddingData, CompletionsUsage, ModelErrorDetails, ModelErrorName, File, CompletionsResponse, CompletionsChoice,
+            CompletionsAssistantMessage, CompletionsStreamResponse, CompletionsStreamChoice, CompletionsDelta)
     )
 )]
 
+#[allow(dead_code)]
 pub struct ApiDoc;

@@ -40,8 +40,6 @@ pub struct Config {
     pub auth_cache_time: u64,
     pub auth_cache_capacity: usize,
     pub mind_ie_metrics_update_interval: usize,
-    pub auth_cache_redis: bool,
-    pub auth_cache_redis_url: String,
 }
 
 impl Default for Config {
@@ -81,8 +79,6 @@ impl Default for Config {
             auth_cache_time: 1200,
             auth_cache_capacity: 3000,
             mind_ie_metrics_update_interval: 1,
-            auth_cache_redis:false,
-            auth_cache_redis_url: "".to_string(),
         }
     }
 }

@@ -3,8 +3,4 @@ pub mod files;
 pub mod models;
 pub mod projects;
 pub mod services;
-pub mod model_limits;
-pub mod user_model_limits;
 pub mod services_detail;
-pub mod auth;
-pub mod rsa_key;

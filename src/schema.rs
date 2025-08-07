@@ -12,18 +12,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    invitation_code (id) {
-        id -> Int4,
-        users -> Text,
-        origination -> Nullable<Text>,
-        telephone -> Nullable<Text>,
-        email -> Nullable<Text>,
-        created_at -> Int8,
-        code -> Text,
-    }
-}
-
-diesel::table! {
     project_object (id) {
         id -> Text,
         object -> Text,
@@ -47,7 +35,6 @@ diesel::table! {
 
 diesel::allow_tables_to_appear_in_same_query!(
     file_object,
-    invitation_code,
     project_object,
     user_object,
 );

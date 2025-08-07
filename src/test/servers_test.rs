@@ -2,7 +2,7 @@
 pub mod tests {
     use actix_web::{test, App};
     use crate::apis::models_api::chat::health;
-    use crate::apis::models_api::schemas::{EmbeddingRequest, EmbeddingResponse};
+    use crate::cores::models::embedding::embedding_controller::{EmbeddingRequest, EmbeddingResponse};
 
 
     #[actix_rt::test]
@@ -25,7 +25,12 @@ pub mod tests {
         ).await;
 
         let request_body = EmbeddingRequest {
-            input: vec!["This is a test input".to_string()],
+            input: Some(vec!["This is a test input".to_string()]),
+            inputs: None,
+            normalize: None,
+            prompt_name: None,
+            truncate: None,
+            truncation_direction: None,
             model: "text-embedding-ada-002".to_string(),
             encoding_format: None,
             dimensions: None,
