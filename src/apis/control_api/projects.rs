@@ -1,23 +1,22 @@
 use actix_web::{get, post, web, Error, HttpRequest, HttpResponse, Responder};
 use std::collections::HashMap;
 
-// use crate::servers::api_schemas::{AppState, ErrorResponse};
-use crate::apis::schemas::ErrorResponse;
-
-use crate::meta::projects::{list_project_objects, create_project_object, retrieve_project_object, 
-    modify_project_object, archive_project_object, ProjectObject};
+use crate::cores::control::projects::Projectmanager;
+use crate::meta::projects::traits::Project;
 
 #[allow(dead_code)]
 pub fn configure(cfg: &mut web::ServiceConfig) {
-    cfg.service(list_projects)
-        .service(create_project)
-        .service(retrieve_project)
-        .service(modify_project)
-        .service(archive_project);
+    cfg.service(web::scope("/v1/organization/projects")
+            .service(list_projects)
+            .service(create_project)
+            .service(retrieve_project)
+            .service(modify_project)
+            .service(archive_project)
+    );
 }
 
 // list projects
-#[get("/v1/organization/projects")]
+#[get("")]
 async fn list_projects(headers: HttpRequest) -> Result<impl Responder, Error> {
     // 1. get parameters from query string
     let query = headers.query_string();
@@ -27,11 +26,10 @@ async fn list_projects(headers: HttpRequest) -> Result<impl Responder, Error> {
     let include_archived = params.get("include_archived").map(|s| s == "true").unwrap_or(false);
 
     // 2. list project objects from the database
-    let projects = list_project_objects(limit, after, include_archived).await
+    let project_manager = Projectmanager::default();
+    let projects = project_manager.list_projects(limit, after, include_archived).await
         .map_err(|e| {
-            let error_response = ErrorResponse {
-                error: format!("Failed to list project objects: {}", e),
-            };
+            let error_response = format!("Failed to list project objects: {}", e);
             actix_web::error::ErrorInternalServerError(format!("{:?}", error_response))
         })?;
 
@@ -40,13 +38,13 @@ async fn list_projects(headers: HttpRequest) -> Result<impl Responder, Error> {
 }
 
 // create project
-#[post("/v1/organization/projects")]
+#[post("")]
 async fn create_project(project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. create project object
     let name = project_name.get("name").cloned().unwrap_or_default();
     let created_at = chrono::Utc::now().timestamp();
     let id = format!("{}_{}", name, created_at);
-    let project = ProjectObject{
+    let project = Project{
         id: id,
         object: "organization.project".to_string(),
         name: project_name.get("name").cloned().unwrap_or_default(),
@@ -54,11 +52,11 @@ async fn create_project(project_name: web::Json<HashMap<String, String>>) -> Res
         archived_at: None,
         status: "active".to_string(),
     };
-    create_project_object(project.clone()).await
+
+    let project_manager = Projectmanager::default();
+    project_manager.create_project(project.clone()).await
         .map_err(|e| {
-            let error_response = ErrorResponse {
-                error: format!("Failed to create project object: {}", e),
-            };
+            let error_response = format!("Failed to create project object: {}", e);
             actix_web::error::ErrorInternalServerError(format!("{:?}", error_response))
         })?;
 
@@ -67,15 +65,14 @@ async fn create_project(project_name: web::Json<HashMap<String, String>>) -> Res
 }
 
 // retrieve project
-#[get("/v1/organization/projects/{project_id}")]
+#[get("/{project_id}")]
 async fn retrieve_project(project_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. retrieve project object
     let project_id = project_id.into_inner();
-    let project = retrieve_project_object(project_id).await
+    let project_manager = Projectmanager::default();
+    let project = project_manager.retrieve_project(project_id).await
         .map_err(|e| {
-            let error_response = ErrorResponse {
-                error: format!("Failed to retrieve project object: {}", e),
-            };
+            let error_response = format!("Failed to retrieve project object: {}", e);
             actix_web::error::ErrorInternalServerError(format!("{:?}", error_response))
         })?;
 
@@ -84,16 +81,15 @@ async fn retrieve_project(project_id: web::Path<String>) -> Result<impl Responde
 }
 
 // modify project
-#[post("/v1/organization/projects/{project_id}")]
+#[post("/{project_id}")]
 async fn modify_project(project_id: web::Path<String>, project_name: web::Json<HashMap<String, String>>) -> Result<impl Responder, Error> {
     // 1. modify project object
     let project_id = project_id.into_inner();
     let name = project_name.get("name").cloned().unwrap_or_default();
-    let project = modify_project_object(project_id, name).await
+    let project_manager = Projectmanager::default();
+    let project = project_manager.modify_project(project_id, name).await
         .map_err(|e| {
-            let error_response = ErrorResponse {
-                error: format!("Failed to modify project object: {}", e),
-            };
+            let error_response = format!("Failed to modify project object: {}", e);
             actix_web::error::ErrorInternalServerError(format!("{:?}", error_response))
         })?;
 
@@ -102,15 +98,14 @@ async fn modify_project(project_id: web::Path<String>, project_name: web::Json<H
 }
 
 // archive project
-#[post("/v1/organization/projects/{project_id}/archive")]
+#[post("/{project_id}/archive")]
 async fn archive_project(project_id: web::Path<String>) -> Result<impl Responder, Error> {
     // 1. archive project object
     let project_id = project_id.into_inner();
-    let project = archive_project_object(project_id).await
+    let project_manager = Projectmanager::default();
+    let project = project_manager.archive_project(project_id).await
         .map_err(|e| {
-            let error_response = ErrorResponse {
-                error: format!("Failed to archive project object: {}", e),
-            };
+            let error_response = format!("Failed to archive project object: {}", e);
             actix_web::error::ErrorInternalServerError(format!("{:?}", error_response))
         })?;
 

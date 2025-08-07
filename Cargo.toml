@@ -8,6 +8,13 @@ maintainer = "Your Name <your.email@example.com>"
 copyright = "2023 Your Name"
 depends = "libssl3"
 
+# 用于离线打包
+[source.crates-io]
+replace-with = "vendored-sources"
+
+[source.vendored-sources]
+directory = "vendor"
+
 [dependencies]
 actix-web = { version = "4.9.0", features = ["rustls-0_23"] }
 actix-service = "2.0"
@@ -41,6 +48,7 @@ once_cell = "1.18"
 r2d2 = "0.8"
 sqlx = { version = "0.8", features = ["runtime-tokio-native-tls", "any", "mysql", "postgres"] }
 log = "0.4.22"
+env_logger = "0.10"
 utoipa = { version = "4", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "4", features = ["actix-web"] }
 utoipa-axum = { version = "0", default-features = false }
@@ -53,6 +61,8 @@ futures-core = "0.3.31"
 chrono-tz = "0.6"
 lru = "0.10"
 lazy_static = "1.4"
+prometheus = "0.13"
+tokio-cron-scheduler = "0.9"
 
 # ubuntu2204 aarch64(required)
 # openssl = { version = "0.10", features = ["vendored"] }

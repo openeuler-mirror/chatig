@@ -6,12 +6,11 @@ use reqwest::{Client, Response};
 use serde_json::{Value, json};
 use futures::stream::StreamExt;    // For try_future and try_next
 
-use crate::cores::chat_models::chat_controller::{ChatCompletionRequest, Message};
+use crate::cores::apps::rag_chat::rag_controller::{ChatCompletionRequest, Message};
 
-use crate::cores::schemas::{KbChatResponse, KbChatStreamResponse, OpenAIStreamResponse};
-use crate::cores::rag_apps::rag_controller::RAGController;
+use crate::cores::apps::rag_chat::rag_controller::{KbChatResponse, KbChatStreamResponse, OpenAIStreamResponse};
+use crate::cores::apps::rag_chat::rag_controller::RAGController;
 
-use crate::configs::settings::load_server_config;
                                       
 pub struct ChatChatRAG;
 
@@ -45,8 +44,7 @@ impl RAGController for ChatChatRAG {
         history.extend_from_slice(&req_body.messages[..req_body.messages.len() - 1]);
 
         // 2. Construct the request body for the chatchat API
-        let server_config = load_server_config()
-            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
+        let model_name = "chatchat";    // TODO: change to the real model name
         let request_body = json!({
             "query": query,
             "mode": "local_kb",
@@ -55,7 +53,7 @@ impl RAGController for ChatChatRAG {
             "score_threshold": 2,
             "history": history,
             "stream": stream,
-            "model": &server_config.chatchat.model_name,
+            "model": model_name,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "prompt_name": "default",
@@ -64,7 +62,8 @@ impl RAGController for ChatChatRAG {
 
         // Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(&server_config.chatchat.kb_chat)
+        let kb_chat_url = "http://localhost:8000/rag/chat";    // TODO: change to the real URL
+        let response = match client.post(kb_chat_url)
             .json(&request_body)
             .send()
             .await{

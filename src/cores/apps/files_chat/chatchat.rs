@@ -10,14 +10,12 @@ use futures::stream::StreamExt;    // For try_future and try_next
 use std::fs;
 use std::path::Path;
 
-use crate::cores::chat_models::chat_controller::{ChatCompletionRequest, Message};
-use crate::cores::schemas::{OpenAIStreamResponse, UploadTempDocsResponse, 
-    FileChatResponse, FileStreamChatResponse, FileDocStreamChatResponse, OpenAIDeltaMessage, OpenAIStreamChoice};
-use crate::cores::files_apps::file_controller::FileChatController;
-use crate::cores::files_apps::file_controller::UploadForm;
+use crate::cores::apps::files_chat::file_controller::{UploadTempDocsResponse, FileChatResponse, FileStreamChatResponse, 
+    FileDocStreamChatResponse, OpenAIStreamResponse, OpenAIDeltaMessage, OpenAIStreamChoice, ChatCompletionRequest, Message};
+use crate::cores::apps::files_chat::file_controller::FileChatController;
+use crate::cores::apps::files_chat::file_controller::UploadForm;
 
 use crate::configs::settings::GLOBAL_CONFIG;
-use crate::configs::settings::load_server_config;
 use crate::meta::files::traits::File;
 use crate::cores::control::files::FileManager;
 
@@ -75,10 +73,8 @@ impl FileChatController for ChatChatFile {
         }
         
         let client = Client::new();
-        let server_config = load_server_config()
-            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
-        
-        let response = client.post(&server_config.chatchat.upload_temp_docs)
+        let upload_temp_docs_url = "http://localhost:8000/api/v1/upload_temp_docs";   // TODO: change to the real URL
+        let response = client.post(upload_temp_docs_url)
             .multipart(req_form)
             .send()
             .await
@@ -141,8 +137,7 @@ impl FileChatController for ChatChatFile {
         history.extend_from_slice(&req_body.messages[..req_body.messages.len() - 1]);
 
         // 2. Construct the request body for the chatchat API
-        let server_config = load_server_config()
-            .map_err(|err| ErrorInternalServerError(format!("Failed to load server config: {}", err)))?;
+        let model_name = "chatchat";   // TODO: change to the real model name
         let request_body = json!({
             "query": query,
             "knowledge_id": req_body.file_id,
@@ -150,7 +145,7 @@ impl FileChatController for ChatChatFile {
             "score_threshold": 2,
             "history": history,
             "stream": stream,
-            "model_name": &server_config.chatchat.model_name,
+            "model_name": model_name,
             "temperature": temperature,
             "max_tokens": max_tokens,
             "prompt_name": "default"
@@ -158,7 +153,8 @@ impl FileChatController for ChatChatFile {
 
         // Use reqwest to initiate a POST request
         let client = Client::new();
-        let response = match client.post(&server_config.chatchat.file_chat)
+        let file_chat_url = "http://localhost:8000/api/v1/file_chat";   // TODO: change to the real URL
+        let response = match client.post(file_chat_url)
             .json(&request_body)
             .send()
             .await{
