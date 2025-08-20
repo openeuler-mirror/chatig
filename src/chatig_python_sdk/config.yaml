@@ -1,0 +1,63 @@
+# 基础配置
+base_config:
+  base_url: "http://localhost:8000"
+  api_key: ""
+  timeout: 60.0
+  max_retries: 3
+
+# 模块配置
+modules:
+  chat:
+    enabled: true
+    endpoints:
+      chat_completion: "/v1/chat/completions"
+      health_check: "/health"
+  
+  rerank:
+    enabled: true
+    endpoints:
+      rerank: "/v1/rerank"
+      vllm_rerank: "/v1/rerank/vllm"
+  
+  embeddings:
+    enabled: true
+    endpoints:
+      embeddings: "/v1/embeddings"
+  
+  files:
+    enabled: true
+    endpoints:
+      upload_file: "/v1/files"
+      get_files: "/v1/files"
+  
+  models:
+    enabled: true
+    endpoints:
+      models: "/v1/models"
+  
+  services:
+    enabled: true
+    endpoints:
+      services: "/v1/services"
+  
+  rag_chat:
+    enabled: true
+    endpoints:
+      rag_chat: "/v1/rag/completions"
+  
+  file_chat:
+    enabled: true
+    endpoints:
+      file_chat: "/v1/file/completions"
+
+# 环境配置
+environments:
+  development:
+    base_url: "http://localhost:8000"
+    timeout: 30.0
+    debug: true
+  
+  production:
+    base_url: "https://chatig.example.com"
+    timeout: 120.0
+    debug: false

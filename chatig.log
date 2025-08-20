@@ -1,0 +1,11 @@
+nohup: ignoring input
+warning: unused manifest key: source
+warning: could not load dep-graph from `/home/shiny/chatig/target/debug/incremental/chatig-2m4bcrpwcukam/s-h9xpqsdz1o-048ol80-working/dep-graph.bin`: memory map must have a non-zero length
+
+warning: `chatig` (bin "chatig") generated 1 warning
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 0.24s
+     Running `target/debug/chatig`
+Using database URL: postgres://chatig:chatig@localhost/chatig
+Initializing models table
+Failed to read YAML file, using default data.
+Starting server on port 8001
