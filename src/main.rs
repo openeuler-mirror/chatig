@@ -103,7 +103,7 @@ async fn main() -> std::io::Result<()> {
             println!("ipv6 enabled");
         }
 
-        let _main_future = builder.run();
+        let _main_future = builder.run().await;
     } else {
         // HTTP 双服务
         let mut server_builder = main_server.bind(("0.0.0.0", port))?;
@@ -113,7 +113,7 @@ async fn main() -> std::io::Result<()> {
             println!("ipv6 enabled");
         }
 
-        let _main_future = server_builder.run();
+        let _main_future = server_builder.run().await;
     };
     Ok(())
 }
