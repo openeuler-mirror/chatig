@@ -81,7 +81,7 @@ def test_api_permissions(base_url, api_key):
         try:
             messages = [ChatMessage(role="user", content="测试")]
             response = invalid_client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen3-0.6B",
                 messages=messages,
                 max_tokens=10
             )
@@ -97,7 +97,7 @@ def test_api_permissions(base_url, api_key):
         try:
             messages = [ChatMessage(role="user", content="你好")]
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen3-0.6B",
                 messages=messages,
                 max_tokens=50,
                 temperature=0.7
@@ -137,7 +137,7 @@ def test_chat_completion(base_url, api_key):
         print(f"👤 用户消息: {messages[0].content}")
         
         response = client.create_completion(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen3-0.6B",
             messages=messages,
             max_tokens=100,
             temperature=0.7
@@ -439,7 +439,7 @@ def test_error_scenarios(base_url, api_key):
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='ChatIG Chat Module 真实服务测试')
-    parser.add_argument('--base-url', default='http://127.0.0.1:8000', 
+    parser.add_argument('--base-url', default='http://127.0.0.1:8001', 
                        help='ChatIG服务地址 (默认: http://127.0.0.1:8000)')
     parser.add_argument('--api-key', default='chatig', 
                        help='API密钥 (默认: chatig)')

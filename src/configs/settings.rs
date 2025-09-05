@@ -4,6 +4,12 @@ use std::io::Read;
 use once_cell::sync::Lazy;
 use serde_yaml;
 
+#[derive(Debug, Deserialize, Clone)]
+pub struct LoggingConfig {
+    pub enable_conversation_log: bool,
+    pub conversation_log_path: String, // 例如 /var/log/chatig/conversation.log
+}
+
 // ---------------------------------------------- Config ----------------------------------------------
 #[derive(Debug, Deserialize, Clone)]
 #[serde(default)]
@@ -40,6 +46,7 @@ pub struct Config {
     pub auth_cache_time: u64,
     pub auth_cache_capacity: usize,
     pub mind_ie_metrics_update_interval: usize,
+    pub logging: LoggingConfig,
 }
 
 impl Default for Config {
@@ -79,6 +86,7 @@ impl Default for Config {
             auth_cache_time: 1200,
             auth_cache_capacity: 3000,
             mind_ie_metrics_update_interval: 1,
+            logging: LoggingConfig::default(), 
         }
     }
 }
@@ -95,6 +103,16 @@ impl Config {
         let mut contents = String::new();
         file.read_to_string(&mut contents).expect("Failed to read config file");
         serde_yaml::from_str(&contents).expect("Failed to parse config file")
+
+    }
+}
+
+impl Default for LoggingConfig {
+    fn default() -> Self {
+        Self {
+            enable_conversation_log: true,
+            conversation_log_path: "/var/log/chatig/conversation.log".to_string(),
+        }
     }
 }
 

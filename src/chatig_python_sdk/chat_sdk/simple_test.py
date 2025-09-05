@@ -38,7 +38,7 @@ def test_basic_functionality():
     print("\n3. 测试客户端初始化...")
     client = ChatClient(
         api_key="test-key",
-        api_base="http://localhost:8080"
+        api_base="http://localhost:8001"
     )
     print(f"   ✅ 客户端初始化成功")
     print(f"   ✅ API基础地址: {client.api_base}")
