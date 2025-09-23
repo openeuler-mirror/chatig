@@ -78,7 +78,7 @@ class ConversationManager:
             "messages": [msg.model_dump() for msg in self.messages]
         }
     
-    def chat(self, message: str, model: str = "Qwen/Qwen2.5-7B-Instruct", **kwargs) -> str:
+    def chat(self, message: str, model: str = "Qwen/qwen2.5-7b-instruct", **kwargs) -> str:
         """
         发送消息并获取回复
         

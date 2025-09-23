@@ -122,7 +122,10 @@ pub async fn completions(
                 active_model: model_name.to_string(),
             },
         )),
-        _ => return Err(ErrorBadRequest(format!("Unsupported {} model series!", model_series))),
+        _ => return Err(ErrorBadRequest(
+            format!("Unsupported {} model series!",
+            model_series
+        ))),
     };
 
 

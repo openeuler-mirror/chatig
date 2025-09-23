@@ -12,10 +12,10 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 # 使用绝对导入
-from rerank_client import RerankClient
-from config import RerankConfig
-from models import RerankEngineType
-from exceptions import RerankError, RerankValidationError
+from rerank_sdk.rerank_client import RerankClient
+from rerank_sdk.config import RerankConfig
+from rerank_sdk.models import RerankEngineType
+from rerank_sdk.exceptions import RerankError, RerankValidationError
 
 
 def test_health_check():
@@ -51,7 +51,7 @@ def test_std_rerank():
     
     try:
         response = client.rerank_std(
-            model="bge-reranker-v2-m3",
+            model="BAAI/bge-reranker-v2-m3",
             query=query,
             documents=documents,
             top_n=2
@@ -183,7 +183,7 @@ def test_configuration():
     
     # 测试自定义配置
     config = RerankConfig(
-        base_url="http://localhost:8000",
+        base_url="http://127.0.0.1:8001",
         timeout=60.0,
         max_retries=5
     )
@@ -252,4 +252,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main() 
+    main()

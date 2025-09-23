@@ -18,11 +18,11 @@ class ChatConfig:
     def __init__(self):
         # API 配置
         self.api_key: str = os.getenv("CHATIG_API_KEY", "")
-        self.api_base: str = os.getenv("CHATIG_API_BASE", "http://localhost:8080")
+        self.api_base: str = os.getenv("CHATIG_API_BASE", "http://localhost:8001")
         
         # 远程VLLM服务配置
-        self.vllm_server_url: str = os.getenv("VLLM_SERVER_URL", "http://localhost:8000")
-        self.vllm_model_name: str = os.getenv("VLLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct")
+        self.vllm_server_url: str = os.getenv("VLLM_SERVER_URL", "http://localhost:8001")
+        self.vllm_model_name: str = os.getenv("VLLM_MODEL_NAME", "Qwen/qwen2.5-7b-instruct")
         self.vllm_api_key: str = os.getenv("VLLM_API_KEY", "")
         
         # 连接配置

@@ -70,7 +70,7 @@ class AssistantMessage(BaseModel):
 class Choice(BaseModel):
     """选择模型 - 对应Rust中的Choice"""
     message: AssistantMessage = Field(..., description="助手消息")
-    finish_reason: str = Field(..., description="完成原因")
+    finish_reason: Optional[str] = Field(None, description="生成停止的原因")
     index: int = Field(..., description="选择索引")
 
 

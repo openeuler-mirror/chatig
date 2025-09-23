@@ -111,7 +111,7 @@ def test_client_initialization():
     
     try:
         # 硬编码配置
-        base_url = "http://127.0.0.1:8000"
+        base_url = "http://127.0.0.1:8001"
         api_key = "chatig"
         
         print(f"使用API密钥: {api_key}")
@@ -131,7 +131,7 @@ def test_client_initialization():
         
         # 测试模型验证
         test_models = [
-            "Qwen/Qwen2.5-7B-Instruct",
+            "Qwen/qwen2.5-7b-instruct",
             "GLM/GLM-4",
             "meta-llama/Llama-3-8B-Instruct",
             "invalid/model",
@@ -173,7 +173,7 @@ def test_payload_construction():
         ]
         
         request = ChatCompletionRequest(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=100,
             temperature=0.7
@@ -190,7 +190,7 @@ def test_payload_construction():
         
         # 测试流式payload构造
         stream_request = ChatCompletionRequest(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=100,
             temperature=0.7,
@@ -210,7 +210,7 @@ def test_payload_construction():
         ]
         
         complex_request = ChatCompletionRequest(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=complex_messages,
             max_tokens=200,
             temperature=0.8,
@@ -258,7 +258,7 @@ def test_mock_api_calls():
                 "id": "chatcmpl-123",
                 "object": "chat.completion",
                 "created": 1234567890,
-                "model": "Qwen/Qwen2.5-7B-Instruct",
+                "model": "Qwen/qwen2.5-7b-instruct",
                 "choices": [
                     {
                         "index": 0,
@@ -279,7 +279,7 @@ def test_mock_api_calls():
             
             messages = [ChatMessage(role="user", content="你好")]
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=100,
                 temperature=0.7
@@ -297,7 +297,7 @@ def test_mock_api_calls():
                 "id": "chatcmpl-456",
                 "object": "chat.completion.chunk",
                 "created": 1234567890,
-                "model": "Qwen/Qwen2.5-7B-Instruct",
+                "model": "Qwen/qwen2.5-7b-instruct",
                 "choices": [
                     {
                         "index": 0,
@@ -313,7 +313,7 @@ def test_mock_api_calls():
             
             messages = [ChatMessage(role="user", content="你好")]
             response = client.stream_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=100,
                 temperature=0.7
@@ -347,7 +347,7 @@ def test_error_handling():
             try:
                 messages = [ChatMessage(role="user", content="测试")]
                 response = client.create_completion(
-                    model="Qwen/Qwen2.5-7B-Instruct",
+                    model="Qwen/qwen2.5-7b-instruct",
                     messages=messages,
                     max_tokens=10
                 )
@@ -379,7 +379,7 @@ def test_error_handling():
             try:
                 messages = [ChatMessage(role="user", content="测试")]
                 response = client.create_completion(
-                    model="Qwen/Qwen2.5-7B-Instruct",
+                    model="deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
                     messages=messages,
                     max_tokens=10
                 )
@@ -402,7 +402,7 @@ def test_conversation_manager():
     print("\n=== 测试对话管理器 ===")
     
     try:
-        base_url = "http://127.0.0.1:8000"
+        base_url = "http://127.0.0.1:8001"
         api_key = "chatig"
         client = ChatClient(api_key=api_key, api_base=base_url)
         
@@ -456,7 +456,7 @@ def test_call_chain():
     print("\n=== 测试调用链完整性 ===")
     
     try:
-        base_url = "http://127.0.0.1:8000"
+        base_url = "http://127.0.0.1:8001"
         api_key = "chatig"
         
         # 1. 创建客户端
@@ -469,7 +469,7 @@ def test_call_chain():
         
         # 3. 创建请求
         request = ChatCompletionRequest(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=100,
             temperature=0.7
@@ -482,7 +482,7 @@ def test_call_chain():
                 "id": "chatcmpl-123",
                 "object": "chat.completion",
                 "created": 1234567890,
-                "model": "Qwen/Qwen2.5-7B-Instruct",
+                "model": "Qwen/qwen2.5-7b-instruct",
                 "choices": [
                     {
                         "index": 0,
@@ -503,7 +503,7 @@ def test_call_chain():
             
             # 5. 执行API调用
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=100,
                 temperature=0.7
@@ -530,7 +530,7 @@ def test_call_chain():
                 "id": "chatcmpl-456",
                 "object": "chat.completion",
                 "created": 1234567890,
-                "model": "Qwen/Qwen2.5-7B-Instruct",
+                "model": "deepseek-ai/DeepSeek-R1-Distill-Qwen-32B",
                 "choices": [
                     {
                         "index": 0,
@@ -579,7 +579,7 @@ def main():
     print("  - 构造payload格式测试")
     print("  - Mock单元测试跑通调用链")
     print("  - 验证错误处理逻辑")
-    print("  - 本地API配置: base_url=http://127.0.0.1:8000, api_key=chatig")
+    print("  - 本地API配置: base_url=http://127.0.0.1:8001, api_key=chatig")
     print("=" * 60)
     
     # 运行测试

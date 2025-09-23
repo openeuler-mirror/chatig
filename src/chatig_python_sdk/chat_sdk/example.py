@@ -11,7 +11,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # 设置新的API配置
-base_url = "http://127.0.0.1:8000"
+base_url = "http://127.0.0.1:8001"
 api_key = "chatig"
 
 # 设置环境变量

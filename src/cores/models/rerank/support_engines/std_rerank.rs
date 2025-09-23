@@ -36,12 +36,45 @@ impl StdRerankTrait for StdRerank {
             Err(err) => return Err(ErrorInternalServerError(format!("{}", err))),
         };
 
-        // 4. Parse the response
-        let std_response = match build_std_rerank_response(response, service.servicetype.clone()).await {
-            Ok(resp) => resp,
-            Err(err) => return Err(ErrorInternalServerError(format!("{}", err))),
+        // // 4. Parse the response
+        // let std_response = match build_std_rerank_response(response, service.servicetype.clone()).await {
+        //     Ok(resp) => resp,
+        //     Err(err) => return Err(ErrorInternalServerError(format!("{}", err))),
+        // };
+        
+    
+        // Ok(HttpResponse::Ok().json(std_response))
+        // 4) 读取上游响应并判错
+        let status = response.status();
+        let text = response.text().await.unwrap_or_default();
+
+        if !status.is_success() {
+            log::error!("Upstream rerank error {}: {}", status, text);
+            return Ok(HttpResponse::build(status).body(text));
+        }
+
+        // 5) 宽松解析，兼容多种返回形态
+        let root: serde_json::Value = serde_json::from_str(&text)
+            .map_err(|e| ErrorInternalServerError(format!("bad json: {}, body={}", e, text)))?;
+
+        // 根即数组：直接作为 items
+        let items: Vec<serde_json::Value> = if let Some(arr) = root.as_array() {
+            arr.clone()
+        } else {
+            // 兼容包裹层：body / output / results
+            let body = root.get("body").unwrap_or(&root);
+            let results = body
+                .pointer("/output/results")
+                .or_else(|| body.get("results"))
+                .ok_or_else(|| ErrorInternalServerError(format!("Missing results array in response: {}", root)))?;
+
+            results
+                .as_array()
+                .cloned()
+                .ok_or_else(|| ErrorInternalServerError(format!("results is not an array: {}", results)))?
         };
 
-        Ok(HttpResponse::Ok().json(std_response))
+        // 6) 统一返回
+        Ok(HttpResponse::Ok().json(serde_json::json!({ "results": items })))
     }
 }

@@ -80,7 +80,7 @@ class EmbeddingData(BaseModel):
     embedding: List[float]
 
 
-class Usage(BaseModel):
+class EmbeddingUsage(BaseModel):
     prompt_tokens: int = 0
     total_tokens: int = 0
 
@@ -89,4 +89,4 @@ class EmbeddingResponse(BaseModel):
     object: str = Field("list", Literal=True)
     data: List[EmbeddingData]
     model: str
-    usage: Usage
+    usage: EmbeddingUsage

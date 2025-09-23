@@ -46,7 +46,7 @@ def test_basic_functionality():
     # 4. 测试模型验证
     print("\n4. 测试模型验证...")
     valid_models = [
-        "Qwen/Qwen2.5-7B-Instruct",
+        "Qwen/qwen2.5-7b-instruct",
         "GLM/GLM-4",
         "meta-llama/Llama-3-8B-Instruct"
     ]

@@ -1,0 +1,173 @@
+[33m0a3b559[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeat/sdk-integration[m[33m, [m[1;31morigin/feat/sdk-integration[m[33m)[m image_sdk
+[33mbabde1f[m feat(sdk): add chat_sdk、embedding_sdk、generate_sdk、rerank_sdk with config, models and tests
+[33mab51d00[m open source v1
+[33m289a348[m !96 add new api path
+[33m45d292c[m[33m ([m[1;31mupstream/ylsong-dev[m[33m, [m[1;31morigin/ylsong-dev[m[33m)[m add new api path
+[33m7fdf642[m !95 Modify completions API, big update
+[33m6ef8d10[m[33m ([m[1;31mupstream/yangwb[m[33m, [m[1;31morigin/yangwb[m[33m)[m Modify completions API, big update
+[33mf29170f[m !94 Fix non stream response error, Modify qos error info, Modify timeout e…
+[33mdadd62f[m Fix non stream response error, Modify qos error info, Modify timeout error and Add deployment doc
+[33me5b7298[m !89 Modify all model default stream to true
+[33me909f89[m Modify all model default stream to true
+[33m0312e21[m !88 Add userkeys table init and Fix some bugs
+[33m5608743[m !87 Modify default stream to false and add logprobs para
+[33m20d9f0e[m Add userkeys table init and Fix some bugs
+[33mff1b1af[m Modify default stream to false and add logprobs para
+[33m3fc558c[m !86 continue remote auth when local auth failed
+[33m0e25966[m remove app_key
+[33me763c3f[m continue remote auth when local auth failed
+[33madd92ba[m !85 add local user qos
+[33mda1aec0[m add local user qos
+[33m2757f0d[m !84 Support mindie show token info and fix a bug in auth4model
+[33m977554c[m Support mindie show token info and fix a bug in auth4model
+[33m41de4fe[m !82 add https config option
+[33mdf6b345[m add https config option
+[33m0b10d31[m !80 fix coil start
+[33m28ace26[m fix coil start
+[33mefa860b[m !79 multi coil servers
+[33m5b83cb8[m Merge branch 'master' of gitee.com:openeuler/chatig into multi-server
+[33m7d43889[m !78 add invalidate_cache api
+[33m7715351[m multi coil servers
+[33m79607b2[m add invalidate_cache api
+[33m5cef51d[m !76 Add a service scheduling method
+[33m4f2d996[m auth cache config time && spec
+[33ma5d79ea[m !75 add tls config
+[33m8e4320b[m !74 add Bearer header &amp;&amp; modify remote auth api
+[33m5de3e0b[m Add a service scheduling method
+[33m65cd8fd[m add tls config
+[33m48d740b[m Merge branch 'master' of gitee.com:openeuler/chatig into tyx_auth_0217
+[33mc01e69c[m add Bearer header && modify remote auth api
+[33m023b3f7[m !73 get userid from remote auth
+[33m8fc5d18[m get userid from remote auth
+[33m0f55185[m !72 移除本地鉴权时判断 app_key
+[33mff103b4[m remove app_key header when local auth
+[33m165eba2[m !71 fix head
+[33m5d2202d[m fix
+[33m5b61829[m !70 change time and userid
+[33m610440e[m change time and userid
+[33m5a998db[m !69 qos cache, userid and tokens limit
+[33m815b465[m qos cache, userid and tokens limit
+[33mc94f5ca[m !68 添加鉴权中间件
+[33ma756405[m refine auth cache
+[33m2c8ed77[m add auth middleware
+[33ma71a194[m !66 auth api joint debug with console
+[33mf85b45d[m !65 不开启鉴权和qos时，chatig 正常处理请求
+[33m4e2c7f5[m 不开启鉴权和qos时，chatig 正常处理请求
+[33m4d23b49[m !64 Modify completions API
+[33m9a3b157[m Modify completions API
+[33mb12f0ca[m !62 fix qos and add user id to log
+[33md648245[m change log info
+[33m5d86a58[m fix qos and add user id to log
+[33m847c4d0[m auth api joint debug with console
+[33m9befa46[m !60 change requests error to log
+[33ma3de795[m change requests error to log
+[33m76697f8[m !59 add qos
+[33m93fcc40[m add qos
+[33m3b7cd64[m !58 auth model remote middleware
+[33mcb68e36[m !57 add auth for model interface
+[33m58076e7[m auth model remote middleware
+[33mb48295e[m !56 修改makefile中docker和rpm的命名格式
+[33m0a89041[m auth remote && cache middleware
+[33m0a49c07[m add auth for model interface
+[33mc21850e[m 修改makefile中docker和rpm的命名格式
+[33m7c1f338[m add local auth manage interface
+[33m3a7f462[m add auth if
+[33mcc2ac69[m !54 chatig windows环境部署文档
+[33m4d0bbef[m !53 Add docker deployment doc
+[33m6b326ec[m chatig windows环境部署文档
+[33m8745ded[m Add docker deployment doc
+[33m0c32c35[m !52 Add deepseek model support
+[33m602c672[m Add deepseek model support
+[33m702c872[m !48 启动时候的配置项增加默认值
+[33m889e875[m !51 修改file数据表格的操作方式
+[33m85f067b[m 启动时config配置项增加默认值
+[33maf11fa2[m Merge remote-tracking branch 'upstream/master'
+[33m3d1198e[m Modify file tables
+[33m3582d54[m !38 文生图模型代码支持
+[33m3c275df[m get url from service database
+[33m53a5fc8[m add image model sdxl-turbo api
+[33m13d8db7[m !49 move log config to configs.yaml
+[33m59f205c[m move log config to configs.yaml
+[33mcca8799[m 启动时候的配置项增加默认值
+[33ma634925[m !47 修改service数据库的操作方式
+[33m2f42fe6[m !44 支持阿里百炼服务接口
+[33m0068a24[m Modify services database
+[33m62282f7[m !43 add traffic rate limit
+[33m877efc2[m add traffic rate limit func switch
+[33md83bacd[m !45 更新README.md
+[33m849163e[m Update README.md
+[33m3dc1b45[m add bailian server
+[33m41e68ed[m !41 数据库初始化脚本撰写
+[33m5f2d8c4[m !1 add traffic rate limit * Merge branch 'master' of gitee.com:songyanling/chatig into traffic_control * add traffic rate limit
+[33m028e6fe[m 数据库初始化脚本撰写
+[33m14bdd1b[m !40 修改为从数据库models中读取配置文件
+[33m1e8966c[m Modify to read model config from database
+[33m49b49ec[m !39 swaager-ui访问校验修改
+[33m7b89708[m !37 增加了更多的chat
+[33m6904abe[m swaager-ui访问验证修改
+[33m2b23a5f[m Add llama3.1-8b-instruct and qwen2_5_14b_instruct
+[33mc16b145[m !35 add services manage
+[33m8d62dff[m !34 Save tokens info and add access log, error log
+[33m0bf7c28[m Merge remote-tracking branch 'upstream/master'
+[33m8602983[m Merge branch 'master' of https://gitee.com/songyanling/chatig
+[33md6ba5bc[m add services manage
+[33m711d110[m Save tokens info and add access log, error log
+[33m1fcbaa3[m !33 撰写swagger接入文档
+[33m6a66211[m swagger接入文档
+[33m79d3b6b[m !32 添加https支持
+[33mecc1e92[m 添加https访问支持
+[33m4561e63[m !31 Extract functions and change token type
+[33m4c83e78[m !28 增加数据库通用crud接口
+[33m17368e2[m Extract functions and change token type
+[33m457f3ec[m merge
+[33mb176b53[m Merge remote-tracking branch 'upstream/master'
+[33m877124b[m !29 基于utoipa实现swagger文档可视化配置
+[33m71c86e7[m utoipa实现swagger可视化
+[33m16026a3[m Merge remote-tracking branch 'upstream/master'
+[33m404a8bb[m !27 增加embedding 特性，对接口进行统一规范
+[33m922bda9[m Add an embedding feature to standardize the interface
+[33m8a16e89[m !26 修改文件对话的trait
+[33mf4b6de7[m !25 Add kafka info and logs Merge pull request !25 from 心之歌/gzx-0110
+[33mc29c9f1[m Merge remote-tracking branch 'upstream/master'
+[33m9da5397[m add db crud func for simple call
+[33m50a55dd[m Add upload_temp_docs trait for file chat
+[33md1bb2bf[m Add kafka info and add logs
+[33m7dcb1a8[m !22 嵌入模型bge-large-zh-v1.5支持
+[33m880404e[m add bge-large-zh-v1.5 embeddings support
+[33m254dff9[m !21 修改RAGs与File相关接口
+[33mc47b261[m Modify the files and rag APIS
+[33md6b75f8[m !19 增加模型管理功能
+[33mb9b3253[m !17 修改v1/chat/completions接口
+[33mc000390[m add model manage func
+[33m08503bc[m Modify the v1/chat/completions api
+[33mc47814f[m !14 add database trait
+[33m53629cf[m add db manager
+[33m2fdae8f[m !11 新增v1/embeddings接口
+[33me78e556[m add v1/embeddings api
+[33m78cce86[m !10 整理代码结构
+[33mcc91160[m Adjust the project structure
+[33m2f06bc9[m Adjust the project structure
+[33ma7b9e96[m Adjust the project structure
+[33m5146279[m !9 基于diesel实现的orm
+[33mb2792cc[m remove migrations
+[33m901d7fc[m merge from upstream
+[33m6328dbb[m Merge remote-tracking branch 'upstream/master'
+[33m371d791[m add orm by diesel
+[33m7e70f82[m !8 添加中间件，用于统一检查api-key
+[33md3ade2c[m Add middleware ApiKeyCheck
+[33mb8cd0d1[m Add middleware ApiKeyCheck
+[33m0772ef7[m !7 Add license
+[33m6acba0e[m add LICENSE.
+[33m2da93e6[m !6 Add user API and some docs
+[33m615fb8b[m !5 fix errors and optimize parameters
+[33mb627514[m Add user api and docs
+[33m46af9dd[m !4 Add projects API
+[33m5426245[m fix errors and optimize parameter
+[33m9800c2d[m Add projects API
+[33m05b78d8[m !3 support vllm and mindie
+[33m0e05f0e[m support vllm and mindie
+[33m5d865df[m !2 Add invitation code
+[33m1c7809c[m Add invitation code feat
+[33meb8c2f7[m !1 Init chatig
+[33m0e1b80b[m chatig init
+[33md4e7163[m Initial commit
