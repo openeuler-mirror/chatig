@@ -38,7 +38,7 @@ def test_basic_functionality():
     print("\n3. 测试客户端初始化...")
     client = ChatClient(
         api_key="test-key",
-        api_base="http://localhost:8080"
+        api_base="http://localhost:8001"
     )
     print(f"   ✅ 客户端初始化成功")
     print(f"   ✅ API基础地址: {client.api_base}")
@@ -46,7 +46,7 @@ def test_basic_functionality():
     # 4. 测试模型验证
     print("\n4. 测试模型验证...")
     valid_models = [
-        "Qwen/Qwen2.5-7B-Instruct",
+        "Qwen/qwen2.5-7b-instruct",
         "GLM/GLM-4",
         "meta-llama/Llama-3-8B-Instruct"
     ]

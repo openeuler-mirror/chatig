@@ -10,8 +10,8 @@ SDK 的行为可通过以下环境变量控制：
 
 | 变量名                 | 默认值                    | 说明                                   |
 |------------------------|---------------------------|----------------------------------------|
-| `CHATIG_BASE_URL`      | `http://127.0.0.1:8000`   | ChatIG 服务端基础地址                  |
-| `CHATIG_API_KEY`       | 空                         | API Key（如服务端要求鉴权时设置）      |
+| `CHATIG_BASE_URL`      | `http://127.0.0.1:8001`   | ChatIG 服务端基础地址                  |
+| `CHATIG_API_KEY`       | 空                        | API Key（如服务端要求鉴权时设置）      |
 | `CHATIG_TIMEOUT`       | `60` (秒)                 | HTTP 请求超时时间                      |
 
 ---
@@ -23,7 +23,27 @@ SDK 的行为可通过以下环境变量控制：
 
 - **兼容 OpenAI Embeddings 格式**
   - 输入 `input` 可为字符串或字符串列表
-  - 响应为 `EmbeddingResponse`，包含 `data`, `model`, `usage`
+  - 响应为 `EmbeddingResponse`，包含 `EmbeddingData`, `model`, `EmbeddingUsage`
+
+- **服务端模型配置**
+  - 服务端需预配置模型，如 `BAAI/bge-base-en-v1.5`
+  - 模型配置示例：
+  ```bash
+  curl -s -X POST "http://127.0.0.1:8001/v1/services" \
+    -H "Content-Type: application/json" \
+    -d '{
+      "id": "svc_bge_embedding",
+      "servicetype": "openai_compatible",
+      "status": "active",
+      "url": "https://aigw-nmhhht.cucloud.cn/v1/embeddings",
+      "model_name": "BAAI/bge-base-en-v1.5",
+      "active_model": "BAAI/bge-base-en-v1.5",
+      "capabilities": ["embeddings"],
+      "context_length": 8192,
+      "api_key": "sk-******",
+      "tags": ["embedding"]
+    }'
+  ```
 
 - **批量向量化**
   - 一次请求支持多条文本批量生成向量

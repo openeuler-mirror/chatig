@@ -255,10 +255,17 @@ def parse_rerank_response(
         相应的重排序响应对象
     """
     if engine_type == RerankEngineType.STD:
-        results_data = response_data.get('results', {})
+        results_data = response_data.get('results', [])
+        if isinstance(results_data, list) and len(results_data) > 0:
+            # 取第一个结果（top_n=1的情况）
+            result_data = results_data[0]
+        else:
+            # 默认结果
+            result_data = {}
+        
         result = StdRerankResult(
-            index=results_data.get('index', 0),
-            score=results_data.get('score', 0.0)
+            index=result_data.get('index', 0),
+            score=result_data.get('score', 0.0)
         )
         return StdRerankResponse(results=result)
         
@@ -301,4 +308,4 @@ def parse_rerank_response(
             results=results
         )
     else:
-        raise ValueError(f"Unsupported engine type: {engine_type}") 
+        raise ValueError(f"Unsupported engine type: {engine_type}")

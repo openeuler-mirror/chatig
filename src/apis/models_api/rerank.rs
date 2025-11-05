@@ -17,24 +17,31 @@ pub fn configure(cfg: &mut web::ServiceConfig) {
 
 #[post("")]
 pub async fn rerank_std(req: HttpRequest, req_body: web::Json<StdRerankRequest>) -> Result<impl Responder, Error> {
+    log::info!("Received rerank request with model: {}", req_body.model);
+   
     // 1. Validate that required fields exist in the request data
     if req_body.model.is_empty() || req_body.query.is_empty() || req_body.documents.is_empty() {
+        log::info!("Received rerank request with model: {}", req_body.model);
+        log::info!("Query: {}", req_body.query);
+        log::info!("Documents: {:?}", req_body.documents);
         let error_response = format!("Invalid request: model, query or documents cannot be empty.");
         return Ok(HttpResponse::BadRequest().json(error_response));
     }
     let aicpid = req.extensions().get::<HashMap<&str, String>>().and_then(|data| data.get("aicpid").cloned()).unwrap_or_else(|| "[]".to_string());
+   
+
 
     // 2. build the rerank model
     let (_, active_model) = match req_body.model.split_once('/') {
         Some((series, name)) => (series, name),
         None => ("std", req_body.model.as_str()),
     };
-    
+    log::info!("Using model: {}", active_model);
     let rerank_model = std_rerank::StdRerank { active_model: active_model.to_string() };
 
     // 3. Send the request to the model
     let response = rerank_model.rerank(req_body, aicpid).await;
-
+    log::info!("Rerank response: {:?}", response);
     response
 }
 

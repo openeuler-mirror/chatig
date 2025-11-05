@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer};
+use actix_web::{App, HttpServer, web};
 use actix_cors::Cors;
 use std::time::Duration;
 use std::{fs::File, io::BufReader};
@@ -15,14 +15,13 @@ use crate::configs::settings::GLOBAL_CONFIG;
 use crate::meta::init::setup_database;
 use crate::utils::log::get_log_config;
 use crate::cores::control::health::monitor_model_health;
-
+use utils::convlog::AppState;
 #[cfg(test)]
 mod test;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     let config = &*GLOBAL_CONFIG;
-
     // Get log config and init log
     let log_config_content = get_log_config()?;
     let log_config: RawConfig = serde_yaml::from_str(&log_config_content)
@@ -45,7 +44,8 @@ async fn main() -> std::io::Result<()> {
     // Set the port number
     let port = config.port;
     println!("Starting server on port {}", port);
-
+    // ① 构造全局状态（把配置塞进 AppState；）
+    let app_state = AppState { cfg: config.clone() };
     // Start the HTTP server
     let main_server = HttpServer::new(move || {
         let cors = Cors::default()
@@ -56,6 +56,8 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(cors)
+            // ② 注入 AppState，供日志写入与查询接口使用
+            .app_data(web::Data::new(app_state.clone()))
             //.wrap(ApiKeyCheck::new(Rc::new(db_pool.clone())))
             .configure(|cfg| apis::models_api::chat::configure(cfg))
             .configure(|cfg| apis::models_api::generate::configure(cfg))
@@ -70,6 +72,8 @@ async fn main() -> std::io::Result<()> {
             //.configure(apis::control_api::users::configure)
             .configure(|cfg| apis::control_api::services::configure(cfg))
             .configure(|cfg| apis::control_api::services_detail::configure(cfg))
+            // ③ 挂载日志查询接口：GET /logs/query?conversation_id=xxx
+            // .configure(|cfg| apis::logs::configure(cfg))
             //.service(SwaggerUi::new("/swagger-ui/{_:.*}").url("/api-docs/openapi.json", ApiDoc::openapi()))
     });
 

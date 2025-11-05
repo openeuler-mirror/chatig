@@ -17,9 +17,10 @@ from pydantic import BaseModel, Field, validator
 
 
 class EmbeddingConfig(BaseModel):
+    
     # 基础配置
-    api_key: Optional[str] = Field(default_factory=lambda: os.getenv("CHATIG_API_KEY", "") or None)
-    base_url: str = Field(default_factory=lambda: os.getenv("CHATIG_API_BASE", "http://127.0.0.1:8000"))
+    api_key: Optional[str] = Field(default_factory=lambda: os.getenv("CHATIG_API_KEY", "sk-gw2m0VxGMSjXqG37TWQXlCGs0Wz6wDPe") or None)
+    base_url: str = Field(default_factory=lambda: os.getenv("CHATIG_API_BASE", "http://127.0.0.1:8001"))
     timeout: float = Field(default_factory=lambda: float(os.getenv("CHATIG_TIMEOUT", "60.0")))
     max_retries: int = Field(default_factory=lambda: int(os.getenv("CHATIG_MAX_RETRIES", "3")))
     retry_delay: float = Field(default_factory=lambda: float(os.getenv("CHATIG_RETRY_DELAY", "1.0")))

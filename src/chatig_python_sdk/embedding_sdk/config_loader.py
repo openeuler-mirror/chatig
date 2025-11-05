@@ -3,7 +3,7 @@ import json
 from typing import Dict, Any
 
 def load_config(config_path: str | None) -> Dict[str, Any]:
-    path = config_path or os.getenv("CHATIG_CONFIG", "../config.yaml")
+    path = config_path or os.getenv("CHATIG_CONFIG", "../chatig_config.yaml")
     if not os.path.exists(path):
         return {}
     # 尝试 YAML，再退化到 JSON

@@ -26,7 +26,7 @@ import traceback
 from .embedding_models import (
     EmbeddingEngineType, StdEmbeddingRequest, EmbeddingValidationError
 )
-
+from .embedding_config import EmbeddingConfig
 from .client import EmbeddingsClient
 
 

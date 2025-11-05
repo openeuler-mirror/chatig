@@ -1,7 +1,7 @@
 use actix_web::web;
 use serde_json::{Value, json};
 use reqwest::Response;
-
+use actix_web::{HttpResponse};
 use crate::cores::models::rerank::rerank_controller::{StdRerankRequest, LlamaBoxRerankResponse, 
     VLLMRerankRespnse, MindieRerankResponse};
 
@@ -81,32 +81,46 @@ pub async fn build_std_rerank_response(
     let json_value: Value = serde_json::from_str(&response_text).map_err(|err| {
         format!("Failed to parse unescaped JSON: {}, {}", err, response_text)
     })?;
+    // 快速路径：如果根就是数组（标准化后的 [{index, score}]），直接返回
+    if let Some(arr) = json_value.as_array() {
+        return Ok(arr.clone());
+    }
+    
+    // 一个小工具：从各种可能的包裹层里挖出 results 数组
+    fn extract_results_array(root: &Value) -> Option<&Vec<Value>> {
+        // 1) 兼容 { code, message, body: {...} }
+        let body = root.get("body").unwrap_or(root);
 
+        // 2) 兼容 { output: { results: [...] } } 或 { results: [...] }
+        let results_val = body
+            .pointer("/output/results")
+            .or_else(|| body.get("results"));
+
+        results_val.and_then(|v| v.as_array())
+    }
+    let arr = extract_results_array(&json_value).ok_or_else(|| {
+    format!("Missing results array in response: {}", json_value)
+    })?;
     let mut results = Vec::new();
     match engine_type.as_str() {
-        "llamabox" => {
-            // Parse response into LlamaBoxRerankResponse
-            let llamabox_response: LlamaBoxRerankResponse = serde_json::from_value(json_value).map_err(|err| {
-                format!("Failed to deserialize the Response: {}", err)
+        "vllm" | "llamabox" | "alibaba" => {
+            let arr = extract_results_array(&json_value).ok_or_else(|| {
+                format!("Missing results array in response: {}", json_value)
             })?;
 
-            for result in llamabox_response.results {
-                results.push(json!({
-                    "index": result.index,
-                    "score": result.relevance_score
-                }));
-            }
-        }
-        "vllm" => {
-            let vllm_response: VLLMRerankRespnse = serde_json::from_value(json_value).map_err(|err| {
-                format!("Failed to deserialize the Response: {}", err)
-            })?;
+            for (i, item) in arr.iter().enumerate() {
+                // index：没有就用序号兜底
+                let idx = item.get("index")
+                    .and_then(|v| v.as_u64())
+                    .unwrap_or(i as u64) as u32;
 
-            for result in vllm_response.results {
-                results.push(json!({
-                    "index": result.index,
-                    "score": result.relevance_score
-                }));
+                // score：兼容 relevance_score / score
+                let score = item.get("relevance_score")
+                    .and_then(|v| v.as_f64())
+                    .or_else(|| item.get("score").and_then(|v| v.as_f64()))
+                    .unwrap_or(0.0) as f32;
+                
+                results.push(json!({ "index": idx, "score": score }));
             }
         }
         "mindie" => {
@@ -127,6 +141,7 @@ pub async fn build_std_rerank_response(
     }
 
     Ok(results)
+
 }
 
 

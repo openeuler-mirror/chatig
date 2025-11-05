@@ -13,7 +13,9 @@ from .embedding_models import (
     EmbeddingResponse,
     EmbeddingData,
     EmbeddingValidationError,
+    EmbeddingUsage,
 )
+
 
 
 class EmbeddingsClient:
@@ -31,7 +33,7 @@ class EmbeddingsClient:
         self.cfg = config or EmbeddingConfig()
         self._session: Session = session or requests.Session()
         self.default_model: str = getattr(
-            self.cfg, "default_embedding_model", "Qwen/Qwen2.5-7B-Embeddings"
+            self.cfg, "default_embedding_model", "BAAI/bge-base-en-v1.5"
         )
 
     def __enter__(self) -> "EmbeddingsClient":
@@ -39,6 +41,7 @@ class EmbeddingsClient:
 
     def __exit__(self, exc_type, exc, tb) -> None:
         self.close()
+
 
     # --------- 内部工具 ----------
     def _headers(self) -> Dict[str, str]:

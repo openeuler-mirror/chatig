@@ -147,6 +147,23 @@ async fn init_models_table(client: &mut Client) -> Result<(), Error> {
             created: timestamp,
             owned_by: "system".to_string(),
         },
+        Model {
+            id: "Qwen3-0.6B".to_string(),
+            object: "model".to_string(),
+            model_name: "Qwen3-0.6B".to_string(), // 若未设置 served-model-name，可填 "/home/aisp/project/models/Qwen3-0.6B"
+            request_url: "http://127.0.0.1:8000/v1/chat/completions".to_string(),
+            created: timestamp,
+            owned_by: "system".to_string(),
+        },
+        Model {
+            id: "svc_bge_embedding".to_string(),
+            object: "model".to_string(),
+            model_name: "BAAI/bge-base-en-v1.5".to_string(), 
+            request_url: "https://aigw-nmhhht.cucloud.cn/v1".to_string(),
+            created: timestamp,
+            owned_by: "system".to_string(),
+        },
+
     ]; 
 
     let models_path = "/etc/chatig/models.yaml";

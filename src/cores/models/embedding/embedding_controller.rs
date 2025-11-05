@@ -7,7 +7,6 @@ use utoipa::ToSchema;
 pub struct EmbeddingRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub input: Option<Vec<String>>,
-    
     #[serde(skip_serializing_if = "Option::is_none")]
     pub inputs: Option<String>, //adapt to other embeddings model
     // pub input: Vec<String>,

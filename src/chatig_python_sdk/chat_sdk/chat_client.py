@@ -101,7 +101,7 @@ class ChatClient:
             
             # VLLM默认配置
             self.vllm_server_url = vllm_server_url or "http://localhost:8000"
-            self.vllm_model_name = vllm_model_name or "Qwen/Qwen2.5-7B-Instruct"
+            self.vllm_model_name = vllm_model_name or "Qwen/qwen2.5-7b-instruct"
             self.vllm_api_key = vllm_api_key or ""
         
         # 保存配置引用
@@ -275,7 +275,7 @@ class ChatClient:
     def create_completion(
         self,
         messages: List[ChatMessage],
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: Optional[float] = None,
         top_p: Optional[int] = None,
         n: Optional[int] = None,
@@ -348,7 +348,7 @@ class ChatClient:
         
         # 发送请求
         response_data = self._request_with_retry(request_data)
-        
+        print("-------",response_data)
         # 根据响应类型返回相应的模型
         if "reasoning_content" in response_data.get("choices", [{}])[0].get("message", {}):
             return CompletionsResponse(**response_data)
@@ -359,7 +359,7 @@ class ChatClient:
         self,
         message: str,
         system_prompt: Optional[str] = None,
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: float = 0.7,
         max_tokens: int = 1024
     ) -> str:
@@ -396,7 +396,7 @@ class ChatClient:
     def stream_completion(
         self,
         messages: List[ChatMessage],
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: Optional[float] = None,
         max_tokens: Optional[int] = None,
         **kwargs
@@ -446,10 +446,11 @@ class ChatClient:
                                         json_data = json.loads(data)
                                         if 'choices' in json_data and json_data['choices']:
                                             choice = json_data['choices'][0]
-                                            if 'delta' in choice:
-                                                content = choice['delta'].get('content', '')
-                                            else:
-                                                content = choice.get('message', {}).get('content', '')
+                                            content = ''
+                                            if 'delta' in choice and 'content' in choice['delta']:
+                                                content = choice['delta']['content']
+                                            elif 'message' in choice and 'content' in choice['message']:
+                                                content = choice['message']['content']
                                             if content:
                                                 yield content
                                     except json.JSONDecodeError:
@@ -461,7 +462,7 @@ class ChatClient:
         self,
         message: str,
         system_prompt: Optional[str] = None,
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: float = 0.7,
         max_tokens: int = 1024
     ) -> AsyncGenerator[str, None]:
@@ -715,7 +716,7 @@ class AsyncChatClient(ChatClient):
     async def create_completion(
         self,
         messages: List[ChatMessage],
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: Optional[float] = None,
         top_p: Optional[int] = None,
         n: Optional[int] = None,
@@ -781,7 +782,7 @@ class AsyncChatClient(ChatClient):
         self,
         message: str,
         system_prompt: Optional[str] = None,
-        model: str = "Qwen/Qwen2.5-7B-Instruct",
+        model: str = "Qwen/qwen2.5-7b-instruct",
         temperature: float = 0.7,
         max_tokens: int = 1024
     ) -> str:
@@ -799,7 +800,7 @@ class AsyncChatClient(ChatClient):
             temperature=temperature,
             max_tokens=max_tokens
         )
-        
+   
         # 根据响应类型提取内容
         if hasattr(response, 'choices') and response.choices:
             return response.choices[0].message.content

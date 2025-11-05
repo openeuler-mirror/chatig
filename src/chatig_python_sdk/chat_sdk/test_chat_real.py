@@ -19,6 +19,8 @@ import os
 import time
 import argparse
 import asyncio
+from pydantic import BaseModel
+from typing import Optional
 
 # 添加父目录到路径，以便导入模块
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -31,7 +33,6 @@ try:
 except ImportError as e:
     print(f"❌ 无法导入 chat 模块: {e}")
     sys.exit(1)
-
 
 def test_service_connection(base_url, api_key):
     """测试服务连接状态"""
@@ -81,7 +82,7 @@ def test_api_permissions(base_url, api_key):
         try:
             messages = [ChatMessage(role="user", content="测试")]
             response = invalid_client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=10
             )
@@ -97,7 +98,7 @@ def test_api_permissions(base_url, api_key):
         try:
             messages = [ChatMessage(role="user", content="你好")]
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=50,
                 temperature=0.7
@@ -137,7 +138,7 @@ def test_chat_completion(base_url, api_key):
         print(f"👤 用户消息: {messages[0].content}")
         
         response = client.create_completion(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=100,
             temperature=0.7
@@ -188,15 +189,17 @@ def test_streaming_chat(base_url, api_key):
         async def test_stream():
             nonlocal full_response
             async for chunk in client.stream_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=200,
                 temperature=0.8
             ):
-                if chunk.choices and chunk.choices[0].delta.content:
-                    content = chunk.choices[0].delta.content
-                    print(content, end="", flush=True)
-                    full_response += content
+                # if chunk.choices and chunk.choices[0].delta.content:
+                #     content = chunk.choices[0].delta.content
+                #     print(content, end="", flush=True)
+                #     full_response += content
+                  print(chunk, end="", flush=True)
+                  full_response += chunk
         
         # 运行异步测试
         asyncio.run(test_stream())
@@ -228,7 +231,7 @@ def test_model_validation(base_url, api_key):
         
         # 测试有效模型
         valid_models = [
-            "Qwen/Qwen2.5-7B-Instruct",
+            "Qwen/qwen2.5-7b-instruct",
             "GLM/GLM-4",
             "meta-llama/Llama-3-8B-Instruct"
         ]
@@ -289,7 +292,7 @@ def test_conversation_flow(base_url, api_key):
         print(f"   用户: {messages[0].content}")
         
         response1 = client.create_completion(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=50,
             temperature=0.7
@@ -308,7 +311,7 @@ def test_conversation_flow(base_url, api_key):
         print(f"   用户: {messages[-1].content}")
         
         response2 = client.create_completion(
-            model="Qwen/Qwen2.5-7B-Instruct",
+            model="Qwen/qwen2.5-7b-instruct",
             messages=messages,
             max_tokens=50,
             temperature=0.7
@@ -388,7 +391,7 @@ def test_error_scenarios(base_url, api_key):
         print("🧪 测试空消息...")
         try:
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=[],
                 max_tokens=10
             )
@@ -404,7 +407,7 @@ def test_error_scenarios(base_url, api_key):
         
         try:
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="Qwen/qwen2.5-7b-instruct",
                 messages=messages,
                 max_tokens=10
             )
@@ -417,7 +420,7 @@ def test_error_scenarios(base_url, api_key):
         try:
             messages = [ChatMessage(role="user", content="测试")]
             response = client.create_completion(
-                model="Qwen/Qwen2.5-7B-Instruct",
+                model="qwen-plus",
                 messages=messages,
                 max_tokens=-1,  # 无效参数
                 temperature=2.0  # 无效参数
@@ -439,9 +442,9 @@ def test_error_scenarios(base_url, api_key):
 def main():
     """主函数"""
     parser = argparse.ArgumentParser(description='ChatIG Chat Module 真实服务测试')
-    parser.add_argument('--base-url', default='http://127.0.0.1:8000', 
+    parser.add_argument('--base-url', default='http://127.0.0.1:8001', 
                        help='ChatIG服务地址 (默认: http://127.0.0.1:8000)')
-    parser.add_argument('--api-key', default='chatig', 
+    parser.add_argument('--api-key', default='Authorization: Bearer sk-e66bfb20df094dfab5c675383ee927d8', 
                        help='API密钥 (默认: chatig)')
     parser.add_argument('--test-type', choices=['all', 'connection', 'permissions', 'chat', 'stream', 'model', 'conversation', 'manager', 'error'],
                        default='all', help='测试类型 (默认: all)')

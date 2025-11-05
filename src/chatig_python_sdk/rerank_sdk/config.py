@@ -26,7 +26,7 @@ class RerankConfig:
         proxy: 代理配置
     """
     
-    base_url: str = "http://localhost:8000"
+    base_url: str = "http://127.0.0.1:8001"
     api_key: Optional[str] = None
     timeout: float = 30.0
     max_retries: int = 3
@@ -36,9 +36,9 @@ class RerankConfig:
     proxy: Optional[str] = None
     
     # 远程VLLM服务配置
-    vllm_server_url: str = "http://localhost:8000"
-    vllm_model_name: str = "Qwen/Qwen2.5-7B-Instruct"
-    vllm_api_key: Optional[str] = None
+    vllm_server_url: str = "http://127.0.0.1:8001"
+    vllm_model_name: str = "BAAI/bge-reranker-v2-m3"
+    vllm_api_key: Optional[str] = "sk-gw2m0VxGMSjXqG37TWQXlCGs0Wz6wDPe"
     
     def __post_init__(self):
         """初始化后设置"""
@@ -74,15 +74,15 @@ class RerankConfig:
             RerankConfig实例
         """
         return cls(
-            base_url=os.getenv("CHATIG_BASE_URL", "http://localhost:8000"),
+            base_url=os.getenv("CHATIG_BASE_URL", "http://127.0.0.1:8001"),
             api_key=os.getenv("CHATIG_API_KEY"),
             timeout=float(os.getenv("CHATIG_TIMEOUT", "30.0")),
             max_retries=int(os.getenv("CHATIG_MAX_RETRIES", "3")),
             retry_delay=float(os.getenv("CHATIG_RETRY_DELAY", "1.0")),
             verify_ssl=os.getenv("CHATIG_VERIFY_SSL", "true").lower() == "true",
             proxy=os.getenv("CHATIG_PROXY"),
-            vllm_server_url=os.getenv("VLLM_SERVER_URL", "http://localhost:8000"),
-            vllm_model_name=os.getenv("VLLM_MODEL_NAME", "Qwen/Qwen2.5-7B-Instruct"),
+            vllm_server_url=os.getenv("VLLM_SERVER_URL", "http://127.0.0.1:8001"),
+            vllm_model_name=os.getenv("VLLM_MODEL_NAME", "BAAI/bge-reranker-v2-m3"),
             vllm_api_key=os.getenv("VLLM_API_KEY")
         )
     

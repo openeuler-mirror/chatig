@@ -111,7 +111,7 @@ def run_stop_and_sampling(cli: GenerateClient) -> TestResult:
 
 def main():
     # 允许用环境变量覆盖配置，便于 CI/多环境
-    base_url = os.getenv("CHATIG_BASE_URL", "http://127.0.0.1:8000")
+    base_url = os.getenv("CHATIG_BASE_URL", "http://127.0.0.1:8001")
     api_key = os.getenv("CHATIG_API_KEY")  # 可选
     timeout = float(os.getenv("CHATIG_TIMEOUT", "60"))
 
